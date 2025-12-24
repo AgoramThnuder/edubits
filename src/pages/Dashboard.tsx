@@ -1,28 +1,16 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { 
-  Search, 
-  Bell,
-  BookOpen,
-  Clock,
-  CheckCircle2,
-  Calendar,
-  Plus,
-  ChevronLeft,
-  ChevronRight,
-  TrendingUp,
-  Users
-} from "lucide-react";
+import { Search, BookOpen } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import CreateCourseModal from "@/components/dashboard/CreateCourseModal";
 import ActivityChart from "@/components/dashboard/ActivityChart";
 import ProgressStats from "@/components/dashboard/ProgressStats";
 import FeaturedCourse from "@/components/dashboard/FeaturedCourse";
 import TopicsList from "@/components/dashboard/TopicsList";
 import ScheduleSection from "@/components/dashboard/ScheduleSection";
+import SearchModal from "@/components/dashboard/SearchModal";
+import NotificationsDropdown from "@/components/dashboard/NotificationsDropdown";
+import AccountDropdown from "@/components/dashboard/AccountDropdown";
 
 const navItems = [
   { label: "Dashboard", href: "/", active: true },
@@ -32,6 +20,7 @@ const navItems = [
 
 const Dashboard = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-background">
@@ -64,17 +53,14 @@ const Dashboard = () => {
 
             {/* Right side */}
             <div className="flex items-center gap-3">
-              <button className="p-2.5 rounded-xl hover:bg-secondary transition-colors">
+              <button 
+                onClick={() => setIsSearchOpen(true)}
+                className="p-2.5 rounded-xl hover:bg-secondary transition-colors"
+              >
                 <Search className="w-5 h-5 text-muted-foreground" />
               </button>
-              <button className="p-2.5 rounded-xl hover:bg-secondary transition-colors relative">
-                <Bell className="w-5 h-5 text-muted-foreground" />
-                <span className="absolute top-2 right-2 w-2 h-2 bg-accent rounded-full" />
-              </button>
-              <Avatar className="w-10 h-10 border-2 border-secondary">
-                <AvatarImage src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop" />
-                <AvatarFallback>JD</AvatarFallback>
-              </Avatar>
+              <NotificationsDropdown />
+              <AccountDropdown />
             </div>
           </div>
         </div>
@@ -138,6 +124,11 @@ const Dashboard = () => {
       <CreateCourseModal 
         isOpen={isCreateModalOpen} 
         onClose={() => setIsCreateModalOpen(false)} 
+      />
+      
+      <SearchModal 
+        isOpen={isSearchOpen} 
+        onClose={() => setIsSearchOpen(false)} 
       />
     </div>
   );
