@@ -4,59 +4,65 @@
 
 @layer base {
   :root {
-    /* Paper & Ink - Calm Academic Palette */
-    --background: 40 23% 97%;
-    --foreground: 0 0% 12%;
+    /* Clean Modern Palette - Light gray base */
+    --background: 228 25% 95%;
+    --foreground: 224 30% 15%;
 
-    --card: 40 20% 99%;
-    --card-foreground: 0 0% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 224 30% 15%;
 
-    --popover: 40 20% 99%;
-    --popover-foreground: 0 0% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 30% 15%;
 
-    /* Muted Blue - Academic Accent */
-    --primary: 213 47% 44%;
-    --primary-foreground: 40 23% 97%;
+    /* Primary - Clean Blue */
+    --primary: 224 76% 48%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 40 15% 94%;
-    --secondary-foreground: 0 0% 20%;
+    --secondary: 228 20% 92%;
+    --secondary-foreground: 224 30% 25%;
 
-    --muted: 40 12% 92%;
-    --muted-foreground: 0 0% 40%;
+    --muted: 228 15% 90%;
+    --muted-foreground: 224 15% 45%;
 
-    --accent: 213 35% 90%;
-    --accent-foreground: 213 47% 35%;
+    /* Accent - Vibrant Purple */
+    --accent: 262 83% 58%;
+    --accent-foreground: 0 0% 100%;
 
-    /* Semantic Colors - Gentle Tones */
-    --success: 142 35% 45%;
-    --success-foreground: 40 23% 97%;
+    /* Semantic Colors */
+    --success: 142 70% 45%;
+    --success-foreground: 0 0% 100%;
     
-    --warning: 32 70% 55%;
-    --warning-foreground: 0 0% 12%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
     
-    --destructive: 0 45% 55%;
-    --destructive-foreground: 40 23% 97%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 40 15% 88%;
-    --input: 40 15% 88%;
-    --ring: 213 47% 44%;
+    --border: 228 15% 88%;
+    --input: 228 15% 88%;
+    --ring: 224 76% 48%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
+
+    /* Chart colors */
+    --chart-primary: 262 83% 75%;
+    --chart-secondary: 262 83% 85%;
+    --chart-highlight: 262 83% 58%;
 
     /* Notebook-specific */
-    --notebook-line: 213 30% 85%;
+    --notebook-line: 224 20% 90%;
     --notebook-margin: 0 60% 65%;
-    --notebook-paper: 40 30% 98%;
+    --notebook-paper: 0 0% 100%;
 
     /* Sidebar */
-    --sidebar-background: 40 18% 96%;
-    --sidebar-foreground: 0 0% 25%;
-    --sidebar-primary: 213 47% 44%;
-    --sidebar-primary-foreground: 40 23% 97%;
-    --sidebar-accent: 213 35% 92%;
-    --sidebar-accent-foreground: 213 47% 35%;
-    --sidebar-border: 40 15% 90%;
-    --sidebar-ring: 213 47% 44%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 224 30% 25%;
+    --sidebar-primary: 224 76% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 228 25% 95%;
+    --sidebar-accent-foreground: 224 30% 25%;
+    --sidebar-border: 228 15% 90%;
+    --sidebar-ring: 224 76% 48%;
 
     /* Typography */
     --font-display: "Playfair Display", Georgia, serif;
@@ -68,52 +74,56 @@
   }
 
   .dark {
-    --background: 220 15% 10%;
-    --foreground: 40 15% 92%;
+    --background: 224 30% 8%;
+    --foreground: 228 15% 95%;
 
-    --card: 220 15% 12%;
-    --card-foreground: 40 15% 92%;
+    --card: 224 25% 12%;
+    --card-foreground: 228 15% 95%;
 
-    --popover: 220 15% 12%;
-    --popover-foreground: 40 15% 92%;
+    --popover: 224 25% 12%;
+    --popover-foreground: 228 15% 95%;
 
-    --primary: 213 55% 55%;
-    --primary-foreground: 220 15% 10%;
+    --primary: 224 76% 55%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 12% 18%;
-    --secondary-foreground: 40 15% 88%;
+    --secondary: 224 20% 18%;
+    --secondary-foreground: 228 15% 90%;
 
-    --muted: 220 12% 20%;
-    --muted-foreground: 40 10% 60%;
+    --muted: 224 20% 20%;
+    --muted-foreground: 228 10% 60%;
 
-    --accent: 213 30% 25%;
-    --accent-foreground: 213 55% 70%;
+    --accent: 262 83% 65%;
+    --accent-foreground: 0 0% 100%;
 
-    --success: 142 40% 40%;
-    --success-foreground: 40 15% 92%;
+    --success: 142 60% 40%;
+    --success-foreground: 0 0% 100%;
     
-    --warning: 32 60% 50%;
-    --warning-foreground: 220 15% 10%;
+    --warning: 38 80% 45%;
+    --warning-foreground: 0 0% 100%;
     
-    --destructive: 0 50% 45%;
-    --destructive-foreground: 40 15% 92%;
+    --destructive: 0 65% 45%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 220 12% 20%;
-    --input: 220 12% 20%;
-    --ring: 213 55% 55%;
+    --border: 224 20% 20%;
+    --input: 224 20% 20%;
+    --ring: 224 76% 55%;
 
-    --notebook-line: 220 15% 25%;
+    --chart-primary: 262 70% 60%;
+    --chart-secondary: 262 60% 40%;
+    --chart-highlight: 262 83% 65%;
+
+    --notebook-line: 224 20% 20%;
     --notebook-margin: 0 50% 45%;
-    --notebook-paper: 220 15% 13%;
+    --notebook-paper: 224 25% 12%;
 
-    --sidebar-background: 220 15% 8%;
-    --sidebar-foreground: 40 15% 85%;
-    --sidebar-primary: 213 55% 55%;
-    --sidebar-primary-foreground: 220 15% 10%;
-    --sidebar-accent: 213 30% 20%;
-    --sidebar-accent-foreground: 213 55% 70%;
-    --sidebar-border: 220 12% 18%;
-    --sidebar-ring: 213 55% 55%;
+    --sidebar-background: 224 30% 6%;
+    --sidebar-foreground: 228 15% 90%;
+    --sidebar-primary: 224 76% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 224 25% 15%;
+    --sidebar-accent-foreground: 228 15% 90%;
+    --sidebar-border: 224 20% 18%;
+    --sidebar-ring: 224 76% 55%;
   }
 }
 
@@ -132,7 +142,7 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-display tracking-tight;
+    @apply font-body font-semibold tracking-tight;
   }
 
   /* Notebook ruled lines background */
@@ -154,17 +164,23 @@
 }
 
 @layer components {
-  /* Calm button transitions */
-  .btn-calm {
-    @apply transition-all duration-200 ease-out;
+  /* Dashboard card */
+  .dashboard-card {
+    @apply bg-card rounded-2xl p-6 shadow-sm border-0;
   }
 
-  .btn-calm:hover {
-    transform: translateY(-1px);
+  /* Stat card with icon */
+  .stat-card {
+    @apply flex flex-col items-center justify-center p-4 rounded-xl bg-background;
   }
 
-  .btn-calm:active {
-    transform: translateY(0);
+  /* Active nav pill */
+  .nav-pill {
+    @apply px-4 py-2 rounded-full text-sm font-medium transition-all duration-200;
+  }
+
+  .nav-pill-active {
+    @apply bg-foreground text-background;
   }
 
   /* Card hover effect */
@@ -174,7 +190,7 @@
 
   .card-lift:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px -8px hsl(var(--foreground) / 0.1);
+    box-shadow: 0 8px 24px -8px hsl(var(--foreground) / 0.08);
   }
 
   /* Notebook block styling */
@@ -190,24 +206,15 @@
 
   /* Subtle text highlight */
   .text-highlight {
-    background: linear-gradient(120deg, hsl(var(--accent)) 0%, hsl(var(--accent)) 100%);
+    background: linear-gradient(120deg, hsl(var(--accent) / 0.2) 0%, hsl(var(--accent) / 0.2) 100%);
     background-repeat: no-repeat;
     background-size: 100% 0.3em;
     background-position: 0 85%;
   }
 
-  /* Progress indicator */
-  .progress-ring {
-    @apply relative inline-flex items-center justify-center;
-  }
-
-  .progress-ring::before {
-    content: "";
-    @apply absolute inset-0 rounded-full;
-    background: conic-gradient(
-      hsl(var(--primary)) var(--progress, 0%),
-      hsl(var(--muted)) var(--progress, 0%)
-    );
+  /* Progress bar segments */
+  .progress-segment {
+    @apply h-2 rounded-full;
   }
 }
 
@@ -219,10 +226,6 @@
 
   .animate-slide-up {
     animation: slideUp var(--transition-slow) ease-out;
-  }
-
-  .animate-slide-in-right {
-    animation: slideInRight var(--transition-slow) ease-out;
   }
 
   @keyframes fadeIn {
@@ -238,17 +241,6 @@
     to { 
       opacity: 1;
       transform: translateY(0);
-    }
-  }
-
-  @keyframes slideInRight {
-    from { 
-      opacity: 0;
-      transform: translateX(-12px);
-    }
-    to { 
-      opacity: 1;
-      transform: translateX(0);
     }
   }
 

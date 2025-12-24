@@ -1,211 +1,140 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { 
-  Plus, 
-  BookOpen, 
-  Clock, 
-  BarChart3,
-  Search,
-  Sparkles
+  Search, 
+  Bell,
+  BookOpen,
+  Clock,
+  CheckCircle2,
+  Calendar,
+  Plus,
+  ChevronLeft,
+  ChevronRight,
+  TrendingUp,
+  Users
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Link } from "react-router-dom";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import CreateCourseModal from "@/components/dashboard/CreateCourseModal";
-import CourseCard from "@/components/dashboard/CourseCard";
+import ActivityChart from "@/components/dashboard/ActivityChart";
+import ProgressStats from "@/components/dashboard/ProgressStats";
+import FeaturedCourse from "@/components/dashboard/FeaturedCourse";
+import TopicsList from "@/components/dashboard/TopicsList";
+import ScheduleSection from "@/components/dashboard/ScheduleSection";
 
-// Mock data for demo
-const mockCourses = [
-  {
-    id: "1",
-    title: "Introduction to Machine Learning",
-    difficulty: "Intermediate",
-    progress: 65,
-    modulesCount: 4,
-    lessonsCount: 12,
-    lastAccessed: "2 days ago",
-  },
-  {
-    id: "2",
-    title: "The French Revolution",
-    difficulty: "Beginner",
-    progress: 30,
-    modulesCount: 3,
-    lessonsCount: 9,
-    lastAccessed: "1 week ago",
-  },
-  {
-    id: "3",
-    title: "Quantum Mechanics Basics",
-    difficulty: "Advanced",
-    progress: 10,
-    modulesCount: 5,
-    lessonsCount: 15,
-    lastAccessed: "3 days ago",
-  },
+const navItems = [
+  { label: "Courses", href: "/courses", active: false },
+  { label: "Dashboard", href: "/dashboard", active: true },
+  { label: "Schedule", href: "/schedule", active: false },
+  { label: "Messages", href: "/messages", active: false },
+  { label: "Support", href: "/support", active: false },
 ];
 
 const Dashboard = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const filteredCourses = mockCourses.filter(course =>
-    course.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
-        <div className="container px-4 py-4">
+      <header className="sticky top-0 z-40 bg-card border-b border-border">
+        <div className="max-w-[1600px] mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
-                <BookOpen className="w-5 h-5 text-primary-foreground" />
+            {/* Logo */}
+            <Link to="/" className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-foreground flex items-center justify-center">
+                <BookOpen className="w-5 h-5 text-background" />
               </div>
-              <span className="text-xl font-display font-semibold text-foreground">
+              <span className="text-xl font-semibold text-foreground">
                 EduBits
               </span>
             </Link>
 
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" asChild>
-                <Link to="/profile">Profile</Link>
-              </Button>
+            {/* Navigation */}
+            <nav className="hidden md:flex items-center gap-1 bg-secondary rounded-full p-1">
+              {navItems.map((item) => (
+                <Link
+                  key={item.label}
+                  to={item.href}
+                  className={`nav-pill ${item.active ? 'nav-pill-active' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+
+            {/* Right side */}
+            <div className="flex items-center gap-3">
+              <button className="p-2.5 rounded-xl hover:bg-secondary transition-colors">
+                <Search className="w-5 h-5 text-muted-foreground" />
+              </button>
+              <button className="p-2.5 rounded-xl hover:bg-secondary transition-colors relative">
+                <Bell className="w-5 h-5 text-muted-foreground" />
+                <span className="absolute top-2 right-2 w-2 h-2 bg-accent rounded-full" />
+              </button>
+              <Avatar className="w-10 h-10 border-2 border-secondary">
+                <AvatarImage src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop" />
+                <AvatarFallback>JD</AvatarFallback>
+              </Avatar>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="container px-4 py-8">
-        {/* Welcome section */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <h1 className="text-3xl font-display font-semibold text-foreground mb-2">
-            Welcome back
-          </h1>
-          <p className="text-muted-foreground">
-            Continue learning or start something new. Every step counts.
-          </p>
-        </motion.div>
-
-        {/* Actions bar */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-8"
-        >
-          <div className="relative max-w-md flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search your courses..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-
-          <Button 
-            variant="calm" 
-            onClick={() => setIsCreateModalOpen(true)}
-            className="shrink-0"
-          >
-            <Plus className="w-4 h-4" />
-            Create New Course
-          </Button>
-        </motion.div>
-
-        {/* Courses grid */}
-        {filteredCourses.length > 0 ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredCourses.map((course, index) => (
-              <motion.div
-                key={course.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 + index * 0.05 }}
-              >
-                <CourseCard course={course} />
-              </motion.div>
-            ))}
-          </div>
-        ) : (
+      {/* Main Content */}
+      <main className="max-w-[1600px] mx-auto px-6 py-8">
+        <div className="grid grid-cols-12 gap-6">
+          {/* Activity Chart */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center py-16"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="col-span-12 lg:col-span-4"
           >
-            {searchQuery ? (
-              <>
-                <p className="text-muted-foreground mb-4">
-                  No courses found matching "{searchQuery}"
-                </p>
-                <Button variant="outline" onClick={() => setSearchQuery("")}>
-                  Clear search
-                </Button>
-              </>
-            ) : (
-              <>
-                <div className="w-16 h-16 rounded-2xl bg-accent flex items-center justify-center mx-auto mb-4">
-                  <Sparkles className="w-8 h-8 text-primary" />
-                </div>
-                <h3 className="text-xl font-display font-medium text-foreground mb-2">
-                  Start your learning journey
-                </h3>
-                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                  Create your first course on any topic you're curious about. 
-                  EduBits will guide you through it step by step.
-                </p>
-                <Button variant="calm" onClick={() => setIsCreateModalOpen(true)}>
-                  <Plus className="w-4 h-4" />
-                  Create Your First Course
-                </Button>
-              </>
-            )}
+            <ActivityChart />
           </motion.div>
-        )}
 
-        {/* Quick stats */}
-        {filteredCourses.length > 0 && (
+          {/* Progress Statistics */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="col-span-12 md:col-span-6 lg:col-span-4"
+          >
+            <ProgressStats />
+          </motion.div>
+
+          {/* Featured Course */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="col-span-12 md:col-span-6 lg:col-span-4"
+          >
+            <FeaturedCourse onCreateNew={() => setIsCreateModalOpen(true)} />
+          </motion.div>
+
+          {/* Topics List */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="mt-12 grid sm:grid-cols-3 gap-4"
+            className="col-span-12 md:col-span-6 lg:col-span-4"
           >
-            <div className="p-6 rounded-xl bg-card border border-border">
-              <div className="flex items-center gap-3 mb-2">
-                <BookOpen className="w-5 h-5 text-primary" />
-                <span className="text-sm text-muted-foreground">Active Courses</span>
-              </div>
-              <p className="text-2xl font-display font-semibold text-foreground">
-                {mockCourses.length}
-              </p>
-            </div>
-            <div className="p-6 rounded-xl bg-card border border-border">
-              <div className="flex items-center gap-3 mb-2">
-                <Clock className="w-5 h-5 text-primary" />
-                <span className="text-sm text-muted-foreground">Lessons Completed</span>
-              </div>
-              <p className="text-2xl font-display font-semibold text-foreground">
-                24
-              </p>
-            </div>
-            <div className="p-6 rounded-xl bg-card border border-border">
-              <div className="flex items-center gap-3 mb-2">
-                <BarChart3 className="w-5 h-5 text-primary" />
-                <span className="text-sm text-muted-foreground">Average Score</span>
-              </div>
-              <p className="text-2xl font-display font-semibold text-foreground">
-                82%
-              </p>
-            </div>
+            <TopicsList />
           </motion.div>
-        )}
+
+          {/* Schedule Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="col-span-12 md:col-span-6 lg:col-span-8"
+          >
+            <ScheduleSection />
+          </motion.div>
+        </div>
       </main>
 
       <CreateCourseModal 

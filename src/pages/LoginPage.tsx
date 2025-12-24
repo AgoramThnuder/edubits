@@ -113,8 +113,7 @@ const LoginPage = () => {
 
             <Button 
               type="submit" 
-              variant="calm" 
-              size="lg" 
+              size="lg"
               className="w-full"
               disabled={isLoading}
             >

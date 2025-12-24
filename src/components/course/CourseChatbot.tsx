@@ -168,7 +168,7 @@ const CourseChatbot = ({ isOpen, onClose, context }: CourseChatbotProps) => {
               />
               <Button 
                 type="submit" 
-                variant="calm" 
+                variant="primary" 
                 size="icon"
                 disabled={!input.trim() || isLoading}
               >
