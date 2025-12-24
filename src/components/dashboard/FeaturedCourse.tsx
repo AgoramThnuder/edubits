@@ -1,7 +1,5 @@
-import { Plus, Users } from "lucide-react";
+import { Plus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Link } from "react-router-dom";
 
 interface FeaturedCourseProps {
   onCreateNew: () => void;
@@ -9,60 +7,25 @@ interface FeaturedCourseProps {
 
 const FeaturedCourse = ({ onCreateNew }: FeaturedCourseProps) => {
   return (
-    <div className="dashboard-card h-full bg-card">
-      {/* Tags */}
-      <div className="flex gap-2 mb-3">
-        <span className="px-3 py-1 rounded-full bg-accent/20 text-accent text-xs font-medium">
-          AI Generated
-        </span>
-        <span className="px-3 py-1 rounded-full bg-secondary text-secondary-foreground text-xs font-medium">
-          Intermediate
-        </span>
+    <div className="dashboard-card h-full bg-card flex flex-col items-center justify-center text-center">
+      {/* Icon */}
+      <div className="w-16 h-16 rounded-full bg-accent/20 flex items-center justify-center mb-4">
+        <Sparkles className="w-8 h-8 text-accent" />
       </div>
 
       {/* Title & Description */}
       <h3 className="text-lg font-semibold text-foreground mb-2">
-        Introduction to Machine Learning
+        Create New Course
       </h3>
-      <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-        Master the fundamentals of ML including supervised learning, neural networks, and model evaluation techniques.
+      <p className="text-sm text-muted-foreground mb-6 leading-relaxed max-w-xs">
+        Generate a personalized AI-powered course on any topic you want to learn.
       </p>
 
-      {/* Stats row */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <Users className="w-4 h-4 text-muted-foreground" />
-          <div className="flex -space-x-2">
-            {[1, 2, 3].map((i) => (
-              <Avatar key={i} className="w-7 h-7 border-2 border-card">
-                <AvatarImage src={`https://i.pravatar.cc/100?img=${i + 10}`} />
-                <AvatarFallback>U{i}</AvatarFallback>
-              </Avatar>
-            ))}
-          </div>
-          <span className="text-xs text-muted-foreground ml-1">+12 learners</span>
-        </div>
-
-        <div className="text-right">
-          <p className="text-xs text-muted-foreground">Course progress</p>
-          <div className="flex items-center gap-2">
-            <span className="text-lg font-bold text-foreground">65%</span>
-            <div className="w-16 h-2 rounded-full bg-secondary overflow-hidden">
-              <div className="h-full w-[65%] bg-accent rounded-full" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Action buttons */}
-      <div className="flex gap-2">
-        <Button asChild className="flex-1">
-          <Link to="/course/1">Continue learning</Link>
-        </Button>
-        <Button variant="outline" size="icon" onClick={onCreateNew}>
-          <Plus className="w-4 h-4" />
-        </Button>
-      </div>
+      {/* Action button */}
+      <Button onClick={onCreateNew} className="gap-2">
+        <Plus className="w-4 h-4" />
+        Create Course
+      </Button>
     </div>
   );
 };
