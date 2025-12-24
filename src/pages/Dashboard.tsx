@@ -25,11 +25,9 @@ import TopicsList from "@/components/dashboard/TopicsList";
 import ScheduleSection from "@/components/dashboard/ScheduleSection";
 
 const navItems = [
-  { label: "Courses", href: "/courses", active: false },
-  { label: "Dashboard", href: "/dashboard", active: true },
-  { label: "Schedule", href: "/schedule", active: false },
-  { label: "Messages", href: "/messages", active: false },
-  { label: "Support", href: "/support", active: false },
+  { label: "Dashboard", href: "/", active: true },
+  { label: "Courses", href: "/course/1", active: false },
+  { label: "Login", href: "/login", active: false },
 ];
 
 const Dashboard = () => {
