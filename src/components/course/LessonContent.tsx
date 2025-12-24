@@ -161,7 +161,7 @@ const LessonContent = ({ lesson, onToggleSidebar, sidebarCollapsed }: LessonCont
                 <ChevronLeft className="w-4 h-4" />
                 Previous Lesson
               </Button>
-              <Button variant="calm" className="gap-2">
+              <Button className="gap-2">
                 Next Lesson
                 <ChevronRight className="w-4 h-4" />
               </Button>

@@ -149,8 +149,7 @@ const CreateCourseModal = ({ isOpen, onClose }: CreateCourseModalProps) => {
               {/* Submit button */}
               <Button 
                 type="submit" 
-                variant="calm" 
-                size="lg" 
+                size="lg"
                 className="w-full"
                 disabled={isGenerating}
               >

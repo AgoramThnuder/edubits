@@ -8,30 +8,30 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+    <header className="sticky top-0 z-50 bg-card border-b border-border">
       <div className="container px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center transition-transform duration-200 group-hover:scale-105">
-              <BookOpen className="w-5 h-5 text-primary-foreground" />
+            <div className="w-9 h-9 rounded-xl bg-foreground flex items-center justify-center transition-transform duration-200 group-hover:scale-105">
+              <BookOpen className="w-5 h-5 text-background" />
             </div>
-            <span className="text-xl font-display font-semibold text-foreground">
+            <span className="text-xl font-semibold text-foreground">
               EduBits
             </span>
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-1 bg-secondary rounded-full p-1">
             <a 
               href="#how-it-works" 
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="nav-pill text-muted-foreground hover:text-foreground"
             >
               How It Works
             </a>
             <a 
               href="#features" 
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="nav-pill text-muted-foreground hover:text-foreground"
             >
               Features
             </a>
@@ -42,7 +42,7 @@ const Header = () => {
             <Button variant="ghost" asChild>
               <Link to="/login">Log In</Link>
             </Button>
-            <Button variant="calm" asChild>
+            <Button asChild>
               <Link to="/dashboard">Get Started</Link>
             </Button>
           </div>
@@ -66,7 +66,7 @@ const Header = () => {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
-            className="md:hidden border-t border-border bg-background"
+            className="md:hidden border-t border-border bg-card"
           >
             <div className="container px-4 py-4 space-y-4">
               <a 
@@ -87,7 +87,7 @@ const Header = () => {
                 <Button variant="outline" className="w-full" asChild>
                   <Link to="/login">Log In</Link>
                 </Button>
-                <Button variant="calm" className="w-full" asChild>
+                <Button className="w-full" asChild>
                   <Link to="/dashboard">Get Started</Link>
                 </Button>
               </div>
