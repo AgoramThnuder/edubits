@@ -125,7 +125,7 @@ const ActivityChart = () => {
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>Custom months</DropdownMenuSubTrigger>
               <DropdownMenuSubContent>
-                {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => (
+                {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((num) => (
                   <DropdownMenuItem
                     key={num}
                     onClick={() => setTimeRange(`${num}months` as TimeRange)}
