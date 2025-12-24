@@ -26,7 +26,7 @@ import ScheduleSection from "@/components/dashboard/ScheduleSection";
 
 const navItems = [
   { label: "Dashboard", href: "/", active: true },
-  { label: "Courses", href: "/course/1", active: false },
+  { label: "Courses", href: "/courses", active: false },
   { label: "Login", href: "/login", active: false },
 ];
 
