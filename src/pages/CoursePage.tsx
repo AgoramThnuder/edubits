@@ -89,9 +89,9 @@ const CoursePage = () => {
       <aside className={`sticky top-0 h-screen bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-200 ${sidebarCollapsed ? 'w-0 overflow-hidden' : 'w-80'}`}>
         {/* Course header */}
         <div className="p-4 border-b border-sidebar-border">
-          <Link to="/dashboard" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4">
+          <Link to="/courses" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4">
             <Home className="w-4 h-4" />
-            Back to Dashboard
+            Back to Courses
           </Link>
           <h2 className="font-display font-semibold text-foreground line-clamp-2">
             {mockCourse.title}
