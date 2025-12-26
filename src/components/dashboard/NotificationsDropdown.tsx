@@ -1,4 +1,5 @@
 import { Bell, BookOpen, CheckCircle, Clock, Award } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,7 +9,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-
 const notifications = [
   {
     id: 1,
@@ -49,6 +49,7 @@ const notifications = [
 ];
 
 const NotificationsDropdown = () => {
+  const navigate = useNavigate();
   const unreadCount = notifications.filter((n) => n.unread).length;
 
   return (
@@ -120,7 +121,12 @@ const NotificationsDropdown = () => {
         </div>
         <DropdownMenuSeparator />
         <div className="p-2">
-          <Button variant="ghost" className="w-full text-sm" size="sm">
+          <Button 
+            variant="ghost" 
+            className="w-full text-sm" 
+            size="sm"
+            onClick={() => navigate("/notifications")}
+          >
             View all notifications
           </Button>
         </div>
