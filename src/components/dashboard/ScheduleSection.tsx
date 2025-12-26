@@ -1,40 +1,37 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Clock, BookOpen, ArrowRight } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { Link } from "react-router-dom";
 
-const scheduleItems = [
+const recentCourses = [
   {
     id: 1,
-    time: "10:30 — 12:00",
-    title: "Supervised Learning Basics",
-    level: "Beginner",
-    levelColor: "bg-primary/10 text-primary",
-    mentor: "AI Tutor",
-    mentorAvatar: "https://i.pravatar.cc/100?img=32",
-    isNow: false,
-    bgColor: "bg-card",
+    title: "Introduction to Machine Learning",
+    lastStudied: "2 hours ago",
+    progress: 65,
+    lessons: 12,
+    completedLessons: 8,
+    image: "https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=400&h=250&fit=crop",
+    category: "AI & Data Science",
   },
   {
     id: 2,
-    time: "13:00 — 14:00",
-    title: "Neural Networks Deep Dive",
-    level: "Advanced",
-    levelColor: "bg-accent text-accent-foreground",
-    mentor: "AI Tutor",
-    mentorAvatar: "https://i.pravatar.cc/100?img=33",
-    isNow: true,
-    bgColor: "bg-accent",
+    title: "Python Programming Basics",
+    lastStudied: "Yesterday",
+    progress: 42,
+    lessons: 8,
+    completedLessons: 3,
+    image: "https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=400&h=250&fit=crop",
+    category: "Programming",
   },
   {
     id: 3,
-    time: "16:00 — 17:00",
-    title: "Model Evaluation Techniques",
-    level: "Beginner",
-    levelColor: "bg-primary/10 text-primary",
-    mentor: "AI Tutor",
-    mentorAvatar: "https://i.pravatar.cc/100?img=34",
-    isNow: false,
-    bgColor: "bg-card",
+    title: "Statistics for Data Analysis",
+    lastStudied: "3 days ago",
+    progress: 28,
+    lessons: 6,
+    completedLessons: 2,
+    image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=250&fit=crop",
+    category: "Mathematics",
   },
 ];
 
@@ -42,61 +39,61 @@ const ScheduleSection = () => {
   return (
     <div className="dashboard-card h-full">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-semibold text-foreground">My schedule</h2>
-        <div className="flex items-center gap-2">
-          <button className="p-2 rounded-lg hover:bg-secondary transition-colors">
-            <ChevronLeft className="w-4 h-4 text-muted-foreground" />
-          </button>
-          <span className="px-3 py-1 rounded-lg bg-secondary text-sm font-medium">Today</span>
-          <button className="p-2 rounded-lg hover:bg-secondary transition-colors">
-            <ChevronRight className="w-4 h-4 text-muted-foreground" />
-          </button>
-        </div>
+        <h2 className="text-lg font-semibold text-foreground">Recent Courses</h2>
+        <Link 
+          to="/courses" 
+          className="flex items-center gap-1 text-sm text-primary hover:text-primary/80 transition-colors"
+        >
+          View all
+          <ArrowRight className="w-4 h-4" />
+        </Link>
       </div>
 
       <div className="grid sm:grid-cols-3 gap-4">
-        {scheduleItems.map((item) => (
+        {recentCourses.map((course) => (
           <Link
-            key={item.id}
-            to={`/course/${item.id}`}
-            className={`block p-5 rounded-2xl transition-all duration-200 hover:scale-[1.02] ${item.bgColor} ${
-              item.isNow ? 'text-accent-foreground' : ''
-            }`}
+            key={course.id}
+            to={`/course/${course.id}`}
+            className="group block rounded-2xl overflow-hidden bg-secondary/50 hover:bg-secondary transition-all duration-200 hover:scale-[1.02]"
           >
-            <div className="flex items-center justify-between mb-3">
-              <span className={`text-sm ${item.isNow ? 'text-accent-foreground/80' : 'text-muted-foreground'}`}>
-                {item.time}
-              </span>
-              {item.isNow && (
-                <span className="flex items-center gap-1 text-xs">
-                  <span className="w-2 h-2 rounded-full bg-warning animate-pulse" />
-                  Now
+            {/* Course Image */}
+            <div className="relative h-28 overflow-hidden">
+              <img 
+                src={course.image} 
+                alt={course.title}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+              <div className="absolute top-2 left-2">
+                <span className="px-2 py-1 bg-card/90 backdrop-blur-sm rounded-full text-xs font-medium text-foreground">
+                  {course.category}
                 </span>
-              )}
+              </div>
             </div>
 
-            <h3 className={`font-semibold mb-3 line-clamp-2 ${item.isNow ? '' : 'text-foreground'}`}>
-              {item.title}
-            </h3>
+            {/* Course Info */}
+            <div className="p-4">
+              <h3 className="font-semibold text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+                {course.title}
+              </h3>
 
-            <span className={`inline-block px-3 py-1 rounded-lg text-xs font-medium mb-4 ${
-              item.isNow ? 'bg-accent-foreground/20' : item.levelColor
-            }`}>
-              {item.level}
-            </span>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
+                <span className="flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  {course.lastStudied}
+                </span>
+                <span className="flex items-center gap-1">
+                  <BookOpen className="w-3 h-3" />
+                  {course.completedLessons}/{course.lessons}
+                </span>
+              </div>
 
-            <div className="flex items-center gap-2 mt-auto">
-              <Avatar className="w-7 h-7">
-                <AvatarImage src={item.mentorAvatar} />
-                <AvatarFallback>AI</AvatarFallback>
-              </Avatar>
-              <div>
-                <p className={`text-sm font-medium ${item.isNow ? '' : 'text-foreground'}`}>
-                  {item.mentor}
-                </p>
-                <p className={`text-xs ${item.isNow ? 'text-accent-foreground/70' : 'text-muted-foreground'}`}>
-                  Instructor
-                </p>
+              {/* Progress */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Progress</span>
+                  <span className="font-medium text-foreground">{course.progress}%</span>
+                </div>
+                <Progress value={course.progress} className="h-1.5" />
               </div>
             </div>
           </Link>
