@@ -1,32 +1,32 @@
-import { Clock, CheckCircle2, Calendar } from "lucide-react";
+import { BookOpen, Sparkles, Users, Layers } from "lucide-react";
 
 const ProgressStats = () => {
   const stats = [
-    { icon: Clock, label: "In progress", value: 3, color: "text-warning bg-warning/10" },
-    { icon: CheckCircle2, label: "Completed", value: 8, color: "text-success bg-success/10" },
-    { icon: Calendar, label: "Upcoming", value: 5, color: "text-accent bg-accent/10" },
+    { icon: BookOpen, label: "Courses Created", value: 5, color: "text-primary bg-primary/10" },
+    { icon: Layers, label: "Total Lessons", value: 24, color: "text-success bg-success/10" },
+    { icon: Sparkles, label: "AI Generations", value: 47, color: "text-accent bg-accent/10" },
   ];
 
   return (
     <div className="dashboard-card h-full">
-      <h2 className="text-lg font-semibold text-foreground mb-4">Progress statistics</h2>
+      <h2 className="text-lg font-semibold text-foreground mb-4">Creator Statistics</h2>
 
       {/* Main percentage */}
       <div className="flex items-baseline gap-2 mb-4">
-        <span className="text-4xl font-bold text-foreground">72%</span>
-        <span className="text-muted-foreground">Total activity</span>
+        <span className="text-4xl font-bold text-foreground">89%</span>
+        <span className="text-muted-foreground">Course completion rate</span>
       </div>
 
       {/* Progress bar segments */}
       <div className="flex gap-1 mb-2">
-        <div className="progress-segment bg-primary flex-[24]" />
-        <div className="progress-segment bg-success flex-[48]" />
-        <div className="progress-segment bg-warning flex-[28]" />
+        <div className="progress-segment bg-primary flex-[35]" />
+        <div className="progress-segment bg-success flex-[45]" />
+        <div className="progress-segment bg-accent flex-[20]" />
       </div>
       <div className="flex justify-between text-xs text-muted-foreground mb-6">
-        <span>24%</span>
-        <span>48%</span>
-        <span>28%</span>
+        <span>Published</span>
+        <span>Draft</span>
+        <span>In Review</span>
       </div>
 
       {/* Stat cards */}
