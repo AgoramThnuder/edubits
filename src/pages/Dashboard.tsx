@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, BookOpen } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Search, BookOpen, Loader2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import CreateCourseModal from "@/components/dashboard/CreateCourseModal";
 import ActivityChart from "@/components/dashboard/ActivityChart";
 import ProgressStats from "@/components/dashboard/ProgressStats";
@@ -11,16 +11,36 @@ import ScheduleSection from "@/components/dashboard/ScheduleSection";
 import SearchModal from "@/components/dashboard/SearchModal";
 import NotificationsDropdown from "@/components/dashboard/NotificationsDropdown";
 import AccountDropdown from "@/components/dashboard/AccountDropdown";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
   { label: "Dashboard", href: "/", active: true },
   { label: "Courses", href: "/courses", active: false },
-  { label: "Login", href: "/login", active: false },
 ];
 
 const Dashboard = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/auth");
+    }
+  }, [user, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background">
