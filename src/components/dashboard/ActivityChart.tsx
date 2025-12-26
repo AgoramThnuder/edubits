@@ -170,32 +170,42 @@ const ActivityChart = () => {
       </div>
 
       {/* Chart */}
-      <div className="relative h-40">
-        {/* Avg line */}
-        <div 
-          className="absolute left-0 right-0 border-t-2 border-dashed border-muted-foreground/30 flex items-center"
-          style={{ top: `${100 - (avgHours / maxHours) * 80}%` }}
-        >
-          <span className="absolute -left-1 -top-3 bg-foreground text-background text-xs px-2 py-0.5 rounded">
-            {avgHours.toFixed(1)} hours
-          </span>
-        </div>
+      <div className="relative">
+        {/* Chart area */}
+        <div className="relative h-32 mb-2">
+          {/* Avg line */}
+          <div 
+            className="absolute left-0 right-0 border-t-2 border-dashed border-muted-foreground/30 flex items-center z-10"
+            style={{ bottom: `${(avgHours / maxHours) * 100}%` }}
+          >
+            <span className="absolute -left-1 -top-3 bg-foreground text-background text-xs px-2 py-0.5 rounded whitespace-nowrap">
+              {avgHours.toFixed(1)} hours
+            </span>
+          </div>
 
-        {/* Bars */}
-        <div className="flex items-end justify-between h-full gap-1 pt-6">
-          {data.map((d, i) => (
-            <div key={d.label} className="flex-1 flex flex-col items-center gap-2 min-w-0">
+          {/* Bars */}
+          <div className="flex items-end justify-between h-full gap-2">
+            {data.map((d, i) => (
               <div 
-                className="w-full rounded-t-lg transition-all duration-300 hover:opacity-80"
+                key={d.label}
+                className="flex-1 rounded-t-lg transition-all duration-300 hover:opacity-80 min-w-0"
                 style={{ 
                   height: `${(d.hours / maxHours) * 100}%`,
-                  background: i === data.length - 1 
-                    ? 'hsl(var(--chart-highlight))' 
-                    : 'hsl(var(--chart-primary))'
+                  backgroundColor: i === data.length - 1 
+                    ? 'hsl(var(--accent))' 
+                    : 'hsl(var(--primary))'
                 }}
               />
-              <span className="text-xs text-muted-foreground truncate w-full text-center">{d.label}</span>
-            </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Labels */}
+        <div className="flex justify-between gap-2">
+          {data.map((d) => (
+            <span key={d.label} className="flex-1 text-xs text-muted-foreground text-center truncate">
+              {d.label}
+            </span>
           ))}
         </div>
       </div>
