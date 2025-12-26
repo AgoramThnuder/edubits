@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,10 +10,16 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Camera, Loader2, Save } from "lucide-react";
 
 const ProfilePage = () => {
-  const { profile, updateProfile, refreshProfile, user } = useAuth();
+  const { profile, updateProfile, refreshProfile, user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/auth");
+    }
+  }, [user, loading, navigate]);
 
   const [displayName, setDisplayName] = useState(profile?.display_name || "");
   const [isSubmitting, setIsSubmitting] = useState(false);

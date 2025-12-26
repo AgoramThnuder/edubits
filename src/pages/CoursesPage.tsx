@@ -1,15 +1,16 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
-import { BookOpen, Clock, Users, ChevronRight, Search, Bell, X } from "lucide-react";
-import { Link } from "react-router-dom";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { BookOpen, Clock, Users, ChevronRight, Search, X, Loader2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/contexts/AuthContext";
+import NotificationsDropdown from "@/components/dashboard/NotificationsDropdown";
+import AccountDropdown from "@/components/dashboard/AccountDropdown";
 
 const navItems = [
   { label: "Dashboard", href: "/", active: false },
   { label: "Courses", href: "/courses", active: true },
-  { label: "Login", href: "/login", active: false },
 ];
 
 const courses = [
@@ -86,6 +87,14 @@ const categories = ["All", ...new Set(courses.map(c => c.category))];
 const CoursesPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/auth");
+    }
+  }, [user, loading, navigate]);
 
   const filteredCourses = useMemo(() => {
     return courses.filter((course) => {
@@ -96,6 +105,18 @@ const CoursesPage = () => {
       return matchesSearch && matchesCategory;
     });
   }, [searchQuery, selectedCategory]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -128,14 +149,8 @@ const CoursesPage = () => {
 
             {/* Right side */}
             <div className="flex items-center gap-3">
-              <button className="p-2.5 rounded-xl hover:bg-secondary transition-colors relative">
-                <Bell className="w-5 h-5 text-muted-foreground" />
-                <span className="absolute top-2 right-2 w-2 h-2 bg-accent rounded-full" />
-              </button>
-              <Avatar className="w-10 h-10 border-2 border-secondary">
-                <AvatarImage src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop" />
-                <AvatarFallback>JD</AvatarFallback>
-              </Avatar>
+              <NotificationsDropdown />
+              <AccountDropdown />
             </div>
           </div>
         </div>
