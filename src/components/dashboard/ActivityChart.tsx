@@ -31,60 +31,82 @@ const timeRangeLabels: Record<TimeRange, string> = {
   "12months": "12 months",
 };
 
-// Generate mock data based on time range
+// Activity data for AI Mini Course Builder
+const activityData = {
+  today: [
+    { label: "6am", hours: 0.5 },
+    { label: "9am", hours: 1.2 },
+    { label: "12pm", hours: 0.8 },
+    { label: "3pm", hours: 1.5 },
+    { label: "6pm", hours: 2.1 },
+    { label: "9pm", hours: 0.3 },
+  ],
+  "7days": [
+    { label: "Mon", hours: 2.5 },
+    { label: "Tue", hours: 3.8 },
+    { label: "Wed", hours: 1.2 },
+    { label: "Thu", hours: 4.5 },
+    { label: "Fri", hours: 3.2 },
+    { label: "Sat", hours: 5.1 },
+    { label: "Sun", hours: 2.8 },
+  ],
+  "1month": [
+    { label: "Week 1", hours: 12.5 },
+    { label: "Week 2", hours: 18.3 },
+    { label: "Week 3", hours: 15.7 },
+    { label: "Week 4", hours: 21.2 },
+  ],
+  "1year": [
+    { label: "Jan", hours: 32 },
+    { label: "Feb", hours: 28 },
+    { label: "Mar", hours: 45 },
+    { label: "Apr", hours: 38 },
+    { label: "May", hours: 52 },
+    { label: "Jun", hours: 41 },
+    { label: "Jul", hours: 35 },
+    { label: "Aug", hours: 48 },
+    { label: "Sep", hours: 55 },
+    { label: "Oct", hours: 42 },
+    { label: "Nov", hours: 38 },
+    { label: "Dec", hours: 29 },
+  ],
+};
+
+// Generate data based on time range
 const generateData = (range: TimeRange) => {
   const today = new Date();
   
   if (range === "today") {
-    // Hourly data for today
-    const hours = ["6am", "9am", "12pm", "3pm", "6pm", "9pm"];
-    return hours.map((hour, i) => ({
-      label: hour,
-      hours: Math.random() * 2,
-      height: Math.random() * 100,
-    }));
+    return activityData.today;
   }
   
   if (range === "7days") {
-    const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    return days.map((day) => ({
-      label: day,
-      hours: Math.random() * 5 + 0.5,
-      height: Math.random() * 80 + 20,
-    }));
+    return activityData["7days"];
   }
   
   if (range === "1month") {
-    // Weekly data for 1 month
-    return ["Week 1", "Week 2", "Week 3", "Week 4"].map((week) => ({
-      label: week,
-      hours: Math.random() * 20 + 5,
-      height: Math.random() * 80 + 20,
-    }));
+    return activityData["1month"];
   }
   
   if (range === "1year") {
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    return months.map((month) => ({
-      label: month,
-      hours: Math.random() * 40 + 10,
-      height: Math.random() * 80 + 20,
-    }));
+    return activityData["1year"];
   }
   
-  // Custom months (2-12 months)
+  // Custom months (2-11 months)
   const monthCount = parseInt(range.replace("months", ""));
   const months = [];
   for (let i = monthCount - 1; i >= 0; i--) {
     const date = new Date(today);
     date.setMonth(date.getMonth() - i);
-    months.push(date.toLocaleString("default", { month: "short" }));
+    const monthLabel = date.toLocaleString("default", { month: "short" });
+    const yearData = activityData["1year"];
+    const monthData = yearData.find(m => m.label === monthLabel);
+    months.push({
+      label: monthLabel,
+      hours: monthData ? monthData.hours : Math.floor(Math.random() * 30) + 20,
+    });
   }
-  return months.map((month) => ({
-    label: month,
-    hours: Math.random() * 40 + 10,
-    height: Math.random() * 80 + 20,
-  }));
+  return months;
 };
 
 const ActivityChart = () => {
@@ -92,8 +114,8 @@ const ActivityChart = () => {
   
   const data = useMemo(() => generateData(timeRange), [timeRange]);
   const totalHours = data.reduce((acc, d) => acc + d.hours, 0);
-  const avgHours = (totalHours / data.length).toFixed(1);
-  const maxBarHeight = 6; // Scale factor for avg line position
+  const avgHours = totalHours / data.length;
+  const maxHours = Math.max(...data.map(d => d.hours));
 
   return (
     <div className="dashboard-card h-full">
@@ -152,10 +174,10 @@ const ActivityChart = () => {
         {/* Avg line */}
         <div 
           className="absolute left-0 right-0 border-t-2 border-dashed border-muted-foreground/30 flex items-center"
-          style={{ top: `${100 - (parseFloat(avgHours) / maxBarHeight) * 100}%` }}
+          style={{ top: `${100 - (avgHours / maxHours) * 80}%` }}
         >
           <span className="absolute -left-1 -top-3 bg-foreground text-background text-xs px-2 py-0.5 rounded">
-            {avgHours} hours
+            {avgHours.toFixed(1)} hours
           </span>
         </div>
 
@@ -166,7 +188,7 @@ const ActivityChart = () => {
               <div 
                 className="w-full rounded-t-lg transition-all duration-300 hover:opacity-80"
                 style={{ 
-                  height: `${d.height}%`,
+                  height: `${(d.hours / maxHours) * 100}%`,
                   background: i === data.length - 1 
                     ? 'hsl(var(--chart-highlight))' 
                     : 'hsl(var(--chart-primary))'
