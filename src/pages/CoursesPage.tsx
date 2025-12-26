@@ -1,8 +1,10 @@
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { BookOpen, Clock, Users, ChevronRight, Search, Bell } from "lucide-react";
+import { BookOpen, Clock, Users, ChevronRight, Search, Bell, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
 
 const navItems = [
   { label: "Dashboard", href: "/", active: false },
@@ -79,7 +81,22 @@ const courses = [
   },
 ];
 
+const categories = ["All", ...new Set(courses.map(c => c.category))];
+
 const CoursesPage = () => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+
+  const filteredCourses = useMemo(() => {
+    return courses.filter((course) => {
+      const matchesSearch = 
+        course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        course.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = selectedCategory === "All" || course.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [searchQuery, selectedCategory]);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -111,9 +128,6 @@ const CoursesPage = () => {
 
             {/* Right side */}
             <div className="flex items-center gap-3">
-              <button className="p-2.5 rounded-xl hover:bg-secondary transition-colors">
-                <Search className="w-5 h-5 text-muted-foreground" />
-              </button>
               <button className="p-2.5 rounded-xl hover:bg-secondary transition-colors relative">
                 <Bell className="w-5 h-5 text-muted-foreground" />
                 <span className="absolute top-2 right-2 w-2 h-2 bg-accent rounded-full" />
@@ -134,9 +148,51 @@ const CoursesPage = () => {
           <p className="text-muted-foreground">Continue learning or explore new topics</p>
         </div>
 
+        {/* Search and Filter */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-8">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search courses..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-10"
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {categories.map((category) => (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  selectedCategory === category
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Results count */}
+        <p className="text-sm text-muted-foreground mb-4">
+          {filteredCourses.length} {filteredCourses.length === 1 ? "course" : "courses"} found
+        </p>
+
         {/* Course Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {courses.map((course, index) => (
+          {filteredCourses.map((course, index) => (
             <motion.div
               key={course.id}
               initial={{ opacity: 0, y: 20 }}
