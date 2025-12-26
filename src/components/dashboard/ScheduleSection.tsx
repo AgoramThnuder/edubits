@@ -49,15 +49,15 @@ const ScheduleSection = () => {
         </Link>
       </div>
 
-      <div className="grid sm:grid-cols-3 gap-4">
+      <div className="grid sm:grid-cols-3 gap-4 h-[calc(100%-3rem)]">
         {recentCourses.map((course) => (
           <Link
             key={course.id}
             to={`/course/${course.id}`}
-            className="group block rounded-2xl overflow-hidden bg-secondary/50 hover:bg-secondary transition-all duration-200 hover:scale-[1.02]"
+            className="group flex flex-col rounded-2xl overflow-hidden bg-secondary/50 hover:bg-secondary transition-all duration-200 hover:scale-[1.02]"
           >
             {/* Course Image */}
-            <div className="relative h-28 overflow-hidden">
+            <div className="relative h-36 overflow-hidden flex-shrink-0">
               <img 
                 src={course.image} 
                 alt={course.title}
@@ -71,8 +71,8 @@ const ScheduleSection = () => {
             </div>
 
             {/* Course Info */}
-            <div className="p-4">
-              <h3 className="font-semibold text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+            <div className="p-4 flex flex-col flex-1">
+              <h3 className="font-semibold text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors min-h-[2.5rem]">
                 {course.title}
               </h3>
 
@@ -87,8 +87,8 @@ const ScheduleSection = () => {
                 </span>
               </div>
 
-              {/* Progress */}
-              <div className="space-y-1.5">
+              {/* Progress - pushed to bottom */}
+              <div className="space-y-1.5 mt-auto">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">Progress</span>
                   <span className="font-medium text-foreground">{course.progress}%</span>
