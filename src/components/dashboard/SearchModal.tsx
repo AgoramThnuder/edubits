@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, X, BookOpen, FileText, Clock } from "lucide-react";
+import { Search, BookOpen, FileText, Clock } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
@@ -63,9 +63,6 @@ const SearchModal = ({ isOpen, onClose }: SearchModalProps) => {
             className="border-0 focus-visible:ring-0 text-base placeholder:text-muted-foreground"
             autoFocus
           />
-          <button onClick={handleClose} className="p-1 hover:bg-secondary rounded-md">
-            <X className="w-4 h-4 text-muted-foreground" />
-          </button>
         </div>
 
         <div className="max-h-[400px] overflow-y-auto p-4">
