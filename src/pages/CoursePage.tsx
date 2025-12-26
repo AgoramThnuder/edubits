@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { 
   BookOpen, 
@@ -10,12 +10,14 @@ import {
   ClipboardList,
   BarChart3,
   Home,
-  MessageCircleQuestion
+  MessageCircleQuestion,
+  Loader2
 } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import LessonContent from "@/components/course/LessonContent";
 import CourseChatbot from "@/components/course/CourseChatbot";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Mock course data
 const mockCourse = {
@@ -66,10 +68,18 @@ const mockCourse = {
 
 const CoursePage = () => {
   const { courseId } = useParams();
+  const navigate = useNavigate();
+  const { user, loading } = useAuth();
   const [expandedModules, setExpandedModules] = useState<string[]>(["m1", "m2"]);
   const [activeLesson, setActiveLesson] = useState("l4");
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/auth");
+    }
+  }, [user, loading, navigate]);
 
   const toggleModule = (moduleId: string) => {
     setExpandedModules(prev =>
@@ -82,6 +92,18 @@ const CoursePage = () => {
   const currentLesson = mockCourse.modules
     .flatMap(m => m.lessons)
     .find(l => l.id === activeLesson);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background flex">

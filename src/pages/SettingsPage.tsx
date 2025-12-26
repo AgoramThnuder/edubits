@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -6,9 +6,16 @@ import { ArrowLeft, Bell, Moon, Lock, Trash2, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 
 const SettingsPage = () => {
-  const { profile } = useAuth();
+  const { profile, user, loading } = useAuth();
+  const navigate = useNavigate();
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [notifications, setNotifications] = useState(true);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/auth");
+    }
+  }, [user, loading, navigate]);
 
   useEffect(() => {
     const isDark = document.documentElement.classList.contains("dark");

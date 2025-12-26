@@ -1,7 +1,8 @@
-import { Bell, BookOpen, CheckCircle, Clock, Award, ArrowLeft, Check } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Bell, BookOpen, CheckCircle, Clock, Award, ArrowLeft, Check, Loader2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const initialNotifications = [
   {
@@ -71,7 +72,15 @@ const initialNotifications = [
 
 const NotificationsPage = () => {
   const [notifications, setNotifications] = useState(initialNotifications);
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
   const unreadCount = notifications.filter((n) => n.unread).length;
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/auth");
+    }
+  }, [user, loading, navigate]);
 
   const markAllAsRead = () => {
     setNotifications(notifications.map((n) => ({ ...n, unread: false })));
@@ -83,11 +92,23 @@ const NotificationsPage = () => {
     );
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-3xl mx-auto px-4 py-8">
         <div className="flex items-center gap-4 mb-8">
-          <Link to="/dashboard">
+          <Link to="/">
             <Button variant="ghost" size="icon" className="rounded-xl">
               <ArrowLeft className="w-5 h-5" />
             </Button>
