@@ -1,1 +1,4 @@
 project_id = "vhevxymivxoulzglfmtw"
+
+[functions.generate-course]
+verify_jwt = false
