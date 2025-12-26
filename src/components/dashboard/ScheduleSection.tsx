@@ -72,7 +72,7 @@ const ScheduleSection = () => {
 
             {/* Course Info */}
             <div className="p-4">
-              <h3 className="font-semibold text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors h-10">
+              <h3 className="font-semibold text-foreground mb-4 line-clamp-2 group-hover:text-primary transition-colors h-10">
                 {course.title}
               </h3>
 
