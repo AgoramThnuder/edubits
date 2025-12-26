@@ -5,108 +5,73 @@ import { Link, useNavigate } from "react-router-dom";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCourses, useUserEnrollments, useEnrollInCourse, useCategories } from "@/hooks/useCourses";
 import NotificationsDropdown from "@/components/dashboard/NotificationsDropdown";
 import AccountDropdown from "@/components/dashboard/AccountDropdown";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 const navItems = [
   { label: "Dashboard", href: "/", active: false },
   { label: "Courses", href: "/courses", active: true },
 ];
 
-const courses = [
-  {
-    id: "1",
-    title: "Introduction to Machine Learning",
-    description: "Master the fundamentals of ML including supervised learning, neural networks, and model evaluation.",
-    progress: 65,
-    lessons: 12,
-    duration: "18.5h",
-    image: "https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=400&h=250&fit=crop",
-    category: "AI & Data Science",
-    learners: 234,
-  },
-  {
-    id: "2",
-    title: "Python Programming Basics",
-    description: "Learn Python from scratch with hands-on projects and real-world examples.",
-    progress: 42,
-    lessons: 8,
-    duration: "12.2h",
-    image: "https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=400&h=250&fit=crop",
-    category: "Programming",
-    learners: 456,
-  },
-  {
-    id: "3",
-    title: "World History: Ancient Civilizations",
-    description: "Explore the rise and fall of ancient empires and their lasting impact on modern society.",
-    progress: 28,
-    lessons: 6,
-    duration: "8.4h",
-    image: "https://images.unsplash.com/photo-1461360370896-922624d12a74?w=400&h=250&fit=crop",
-    category: "History",
-    learners: 189,
-  },
-  {
-    id: "4",
-    title: "Statistics for Data Analysis",
-    description: "Build a strong foundation in statistics to analyze and interpret data effectively.",
-    progress: 15,
-    lessons: 4,
-    duration: "5.8h",
-    image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=250&fit=crop",
-    category: "Mathematics",
-    learners: 312,
-  },
-  {
-    id: "5",
-    title: "Web Development Fundamentals",
-    description: "Learn HTML, CSS, and JavaScript to build modern responsive websites.",
-    progress: 0,
-    lessons: 10,
-    duration: "15h",
-    image: "https://images.unsplash.com/photo-1547658719-da2b51169166?w=400&h=250&fit=crop",
-    category: "Programming",
-    learners: 567,
-  },
-  {
-    id: "6",
-    title: "Digital Marketing Essentials",
-    description: "Master SEO, social media marketing, and content strategy for business growth.",
-    progress: 0,
-    lessons: 7,
-    duration: "9h",
-    image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=250&fit=crop",
-    category: "Business",
-    learners: 423,
-  },
-];
-
-const categories = ["All", ...new Set(courses.map(c => c.category))];
-
 const CoursesPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const { data: courses = [], isLoading: coursesLoading } = useCourses();
+  const { data: enrollments = [] } = useUserEnrollments();
+  const { data: categories = [] } = useCategories();
+  const enrollInCourse = useEnrollInCourse();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!authLoading && !user) {
       navigate("/auth");
     }
-  }, [user, loading, navigate]);
+  }, [user, authLoading, navigate]);
+
+  const enrolledCourseIds = useMemo(() => {
+    return new Set(enrollments.map((e) => e.course_id));
+  }, [enrollments]);
+
+  const categoryNames = useMemo(() => {
+    return ["All", ...categories.map((c) => c.name)];
+  }, [categories]);
 
   const filteredCourses = useMemo(() => {
     return courses.filter((course) => {
       const matchesSearch = 
         course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        course.description.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = selectedCategory === "All" || course.category === selectedCategory;
+        (course.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
+      const matchesCategory = selectedCategory === "All" || course.categories?.name === selectedCategory;
       return matchesSearch && matchesCategory;
     });
-  }, [searchQuery, selectedCategory]);
+  }, [courses, searchQuery, selectedCategory]);
 
-  if (loading) {
+  const handleEnroll = async (courseId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    try {
+      await enrollInCourse.mutateAsync(courseId);
+      toast({
+        title: "Enrolled successfully!",
+        description: "You can now start learning this course.",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Enrollment failed",
+        description: error.message || "Could not enroll in this course.",
+      });
+    }
+  };
+
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -159,7 +124,7 @@ const CoursesPage = () => {
       {/* Main Content */}
       <main className="max-w-[1600px] mx-auto px-6 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-semibold text-foreground mb-2">My Courses</h1>
+          <h1 className="text-3xl font-semibold text-foreground mb-2">Courses</h1>
           <p className="text-muted-foreground">Continue learning or explore new topics</p>
         </div>
 
@@ -184,7 +149,7 @@ const CoursesPage = () => {
             )}
           </div>
           <div className="flex gap-2 flex-wrap">
-            {categories.map((category) => (
+            {categoryNames.map((category) => (
               <button
                 key={category}
                 onClick={() => setSelectedCategory(category)}
@@ -205,78 +170,104 @@ const CoursesPage = () => {
           {filteredCourses.length} {filteredCourses.length === 1 ? "course" : "courses"} found
         </p>
 
-        {/* Course Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCourses.map((course, index) => (
-            <motion.div
-              key={course.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <Link to={`/course/${course.id}`} className="block group">
-                <div className="dashboard-card card-lift overflow-hidden">
-                  {/* Course Image */}
-                  <div className="relative h-40 -mx-6 -mt-6 mb-4 overflow-hidden">
-                    <img 
-                      src={course.image} 
-                      alt={course.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute top-3 left-3">
-                      <span className="px-3 py-1 bg-card/90 backdrop-blur-sm rounded-full text-xs font-medium text-foreground">
-                        {course.category}
-                      </span>
-                    </div>
-                  </div>
+        {/* Loading state */}
+        {coursesLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="dashboard-card h-80 animate-pulse bg-secondary/50" />
+            ))}
+          </div>
+        ) : filteredCourses.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <BookOpen className="w-16 h-16 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">No courses found</h3>
+            <p className="text-muted-foreground">
+              {searchQuery ? "Try adjusting your search" : "No courses available yet"}
+            </p>
+          </div>
+        ) : (
+          /* Course Grid */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredCourses.map((course, index) => {
+              const isEnrolled = enrolledCourseIds.has(course.id);
+              const enrollment = enrollments.find((e) => e.course_id === course.id);
 
-                  {/* Course Info */}
-                  <h3 className="font-semibold text-foreground mb-2 group-hover:text-primary transition-colors line-clamp-2">
-                    {course.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                    {course.description}
-                  </p>
-
-                  {/* Stats */}
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
-                    <span className="flex items-center gap-1">
-                      <BookOpen className="w-3.5 h-3.5" />
-                      {course.lessons} lessons
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5" />
-                      {course.duration}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Users className="w-3.5 h-3.5" />
-                      {course.learners}
-                    </span>
-                  </div>
-
-                  {/* Progress */}
-                  {course.progress > 0 ? (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Progress</span>
-                        <span className="font-medium text-foreground">{course.progress}%</span>
+              return (
+                <motion.div
+                  key={course.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <Link to={`/course/${course.id}`} className="block group">
+                    <div className="dashboard-card card-lift overflow-hidden">
+                      {/* Course Image */}
+                      <div className="relative h-40 -mx-6 -mt-6 mb-4 overflow-hidden">
+                        <img 
+                          src={course.image_url || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=250&fit=crop"} 
+                          alt={course.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute top-3 left-3">
+                          <span className="px-3 py-1 bg-card/90 backdrop-blur-sm rounded-full text-xs font-medium text-foreground">
+                            {course.categories?.name || "General"}
+                          </span>
+                        </div>
                       </div>
-                      <Progress value={course.progress} className="h-1.5" />
+
+                      {/* Course Info */}
+                      <h3 className="font-semibold text-foreground mb-2 group-hover:text-primary transition-colors line-clamp-2">
+                        {course.title}
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                        {course.description || "No description available"}
+                      </p>
+
+                      {/* Stats */}
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
+                        <span className="flex items-center gap-1">
+                          <BookOpen className="w-3.5 h-3.5" />
+                          {course.total_lessons} lessons
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5" />
+                          {course.duration_hours}h
+                        </span>
+                      </div>
+
+                      {/* Progress or Enroll */}
+                      {isEnrolled && enrollment ? (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">Progress</span>
+                            <span className="font-medium text-foreground">{enrollment.progress}%</span>
+                          </div>
+                          <Progress value={enrollment.progress} className="h-1.5" />
+                        </div>
+                      ) : (
+                        <Button
+                          size="sm"
+                          className="w-full"
+                          onClick={(e) => handleEnroll(course.id, e)}
+                          disabled={enrollInCourse.isPending}
+                        >
+                          {enrollInCourse.isPending ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <>
+                              Enroll Now
+                              <ChevronRight className="w-4 h-4 ml-1" />
+                            </>
+                          )}
+                        </Button>
+                      )}
                     </div>
-                  ) : (
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">Not started</span>
-                      <span className="flex items-center gap-1 text-xs font-medium text-primary">
-                        Start learning
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </Link>
-            </motion.div>
-          ))}
-        </div>
+                  </Link>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
       </main>
     </div>
   );

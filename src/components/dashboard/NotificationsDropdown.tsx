@@ -9,48 +9,35 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-const notifications = [
-  {
-    id: 1,
-    type: "reminder",
-    title: "Continue Learning",
-    message: "You haven't practiced React Hooks in 2 days",
-    time: "2h ago",
-    icon: Clock,
-    unread: true,
-  },
-  {
-    id: 2,
-    type: "achievement",
-    title: "New Achievement!",
-    message: "You've completed 10 lessons this week",
-    time: "5h ago",
-    icon: Award,
-    unread: true,
-  },
-  {
-    id: 3,
-    type: "course",
-    title: "New Course Available",
-    message: "Advanced TypeScript Patterns is now available",
-    time: "1d ago",
-    icon: BookOpen,
-    unread: false,
-  },
-  {
-    id: 4,
-    type: "progress",
-    title: "Milestone Reached",
-    message: "You're 75% through Machine Learning basics",
-    time: "2d ago",
-    icon: CheckCircle,
-    unread: false,
-  },
-];
+import { useNotifications, useUnreadNotificationsCount, useMarkNotificationAsRead } from "@/hooks/useNotifications";
+import { formatDistanceToNow } from "date-fns";
+
+const getNotificationIcon = (type: string) => {
+  switch (type) {
+    case "reminder":
+      return Clock;
+    case "achievement":
+      return Award;
+    case "course":
+      return BookOpen;
+    case "progress":
+      return CheckCircle;
+    default:
+      return Bell;
+  }
+};
 
 const NotificationsDropdown = () => {
   const navigate = useNavigate();
-  const unreadCount = notifications.filter((n) => n.unread).length;
+  const { data: notifications = [] } = useNotifications();
+  const { data: unreadCount = 0 } = useUnreadNotificationsCount();
+  const markAsRead = useMarkNotificationAsRead();
+
+  const recentNotifications = notifications.slice(0, 4);
+
+  const handleNotificationClick = (notificationId: string) => {
+    markAsRead.mutate(notificationId);
+  };
 
   return (
     <DropdownMenu>
@@ -73,51 +60,58 @@ const NotificationsDropdown = () => {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <div className="max-h-[300px] overflow-y-auto">
-          {notifications.map((notification) => {
-            const Icon = notification.icon;
-            return (
-              <DropdownMenuItem
-                key={notification.id}
-                className="flex items-start gap-3 p-3 cursor-pointer focus:bg-secondary"
-              >
-                <div
-                  className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    notification.type === "achievement"
-                      ? "bg-accent/10"
-                      : notification.type === "reminder"
-                      ? "bg-primary/10"
-                      : "bg-secondary"
-                  }`}
+          {recentNotifications.length === 0 ? (
+            <div className="p-4 text-center text-muted-foreground text-sm">
+              No notifications yet
+            </div>
+          ) : (
+            recentNotifications.map((notification) => {
+              const Icon = getNotificationIcon(notification.type);
+              return (
+                <DropdownMenuItem
+                  key={notification.id}
+                  className="flex items-start gap-3 p-3 cursor-pointer focus:bg-secondary"
+                  onClick={() => handleNotificationClick(notification.id)}
                 >
-                  <Icon
-                    className={`w-4 h-4 ${
+                  <div
+                    className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
                       notification.type === "achievement"
-                        ? "text-accent"
+                        ? "bg-accent/10"
                         : notification.type === "reminder"
-                        ? "text-primary"
-                        : "text-muted-foreground"
+                        ? "bg-primary/10"
+                        : "bg-secondary"
                     }`}
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium text-sm text-foreground truncate">
-                      {notification.title}
-                    </p>
-                    {notification.unread && (
-                      <span className="w-2 h-2 bg-accent rounded-full flex-shrink-0" />
-                    )}
+                  >
+                    <Icon
+                      className={`w-4 h-4 ${
+                        notification.type === "achievement"
+                          ? "text-accent"
+                          : notification.type === "reminder"
+                          ? "text-primary"
+                          : "text-muted-foreground"
+                      }`}
+                    />
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                    {notification.message}
-                  </p>
-                  <p className="text-xs text-muted-foreground/70 mt-1">
-                    {notification.time}
-                  </p>
-                </div>
-              </DropdownMenuItem>
-            );
-          })}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-sm text-foreground truncate">
+                        {notification.title}
+                      </p>
+                      {!notification.read && (
+                        <span className="w-2 h-2 bg-accent rounded-full flex-shrink-0" />
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                      {notification.message}
+                    </p>
+                    <p className="text-xs text-muted-foreground/70 mt-1">
+                      {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                    </p>
+                  </div>
+                </DropdownMenuItem>
+              );
+            })
+          )}
         </div>
         <DropdownMenuSeparator />
         <div className="p-2">
