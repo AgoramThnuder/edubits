@@ -71,8 +71,8 @@ const ScheduleSection = () => {
             </div>
 
             {/* Course Info */}
-            <div className="p-4 flex flex-col flex-1">
-              <h3 className="font-semibold text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors min-h-[2.5rem]">
+            <div className="p-4">
+              <h3 className="font-semibold text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors h-10">
                 {course.title}
               </h3>
 
@@ -87,8 +87,8 @@ const ScheduleSection = () => {
                 </span>
               </div>
 
-              {/* Progress - pushed to bottom */}
-              <div className="space-y-1.5 mt-auto">
+              {/* Progress */}
+              <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">Progress</span>
                   <span className="font-medium text-foreground">{course.progress}%</span>
