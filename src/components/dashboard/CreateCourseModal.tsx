@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CreateCourseModalProps {
   isOpen: boolean;
@@ -39,16 +40,43 @@ const CreateCourseModal = ({ isOpen, onClose }: CreateCourseModalProps) => {
 
     setIsGenerating(true);
 
-    // Simulate course generation (in real app, this would call AI)
-    setTimeout(() => {
-      setIsGenerating(false);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-course', {
+        body: { topic: topic.trim(), difficulty }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
       toast({
         title: "Course created!",
         description: `Your mini-course on "${topic}" is ready.`,
       });
+      
       onClose();
-      navigate("/course/1");
-    }, 2000);
+      setTopic("");
+      setDifficulty("beginner");
+      
+      if (data?.course?.id) {
+        navigate(`/course/${data.course.id}`);
+      } else {
+        navigate("/courses");
+      }
+    } catch (error: any) {
+      console.error('Course generation error:', error);
+      toast({
+        title: "Generation failed",
+        description: error.message || "Failed to generate course. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
@@ -89,7 +117,8 @@ const CreateCourseModal = ({ isOpen, onClose }: CreateCourseModalProps) => {
               </div>
               <button
                 onClick={onClose}
-                className="p-2 rounded-lg hover:bg-muted transition-colors"
+                disabled={isGenerating}
+                className="p-2 rounded-lg hover:bg-muted transition-colors disabled:opacity-50"
               >
                 <X className="w-5 h-5 text-muted-foreground" />
               </button>
@@ -109,6 +138,7 @@ const CreateCourseModal = ({ isOpen, onClose }: CreateCourseModalProps) => {
                   onChange={(e) => setTopic(e.target.value)}
                   className="text-base"
                   autoFocus
+                  disabled={isGenerating}
                 />
                 <p className="text-xs text-muted-foreground">
                   Be specific for better results. "Machine Learning basics" works better than just "AI".
@@ -124,7 +154,8 @@ const CreateCourseModal = ({ isOpen, onClose }: CreateCourseModalProps) => {
                       key={d.value}
                       type="button"
                       onClick={() => setDifficulty(d.value)}
-                      className={`flex items-center gap-4 p-4 rounded-xl border text-left transition-all duration-200 ${
+                      disabled={isGenerating}
+                      className={`flex items-center gap-4 p-4 rounded-xl border text-left transition-all duration-200 disabled:opacity-50 ${
                         difficulty === d.value
                           ? "border-primary bg-accent/50"
                           : "border-border hover:border-primary/30"
@@ -165,6 +196,12 @@ const CreateCourseModal = ({ isOpen, onClose }: CreateCourseModalProps) => {
                   </>
                 )}
               </Button>
+
+              {isGenerating && (
+                <p className="text-xs text-center text-muted-foreground">
+                  This may take 15-30 seconds while AI creates your personalized course...
+                </p>
+              )}
             </form>
           </motion.div>
         </div>
