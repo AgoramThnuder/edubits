@@ -54,13 +54,13 @@ const SearchModal = ({ isOpen, onClose }: SearchModalProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[600px] p-0 gap-0 overflow-hidden">
-        <div className="flex items-center gap-3 p-4 border-b border-border">
-          <Search className="w-5 h-5 text-muted-foreground" />
+        <div className="flex items-center gap-3 p-4 border-b border-border pr-12">
+          <Search className="w-5 h-5 text-muted-foreground flex-shrink-0" />
           <Input
             placeholder="Search courses, topics, lessons..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="border-0 focus-visible:ring-0 text-base placeholder:text-muted-foreground"
+            className="border-0 focus-visible:ring-0 text-base placeholder:text-muted-foreground h-8"
             autoFocus
           />
         </div>
