@@ -1,4 +1,4 @@
-import { User, Settings, LogOut, HelpCircle, Moon, Sun } from "lucide-react";
+import { User, Settings, LogOut, Moon, Sun } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
@@ -93,10 +93,6 @@ const AccountDropdown = () => {
         >
           <Settings className="w-4 h-4 mr-3" />
           <span>Settings</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem className="cursor-pointer focus:bg-secondary">
-          <HelpCircle className="w-4 h-4 mr-3" />
-          <span>Help & Support</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <div className="flex items-center justify-between px-2 py-2">
