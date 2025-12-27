@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { 
-  BookOpen, 
-  ChevronRight, 
+import {
+  BookOpen,
+  ChevronRight,
   ChevronDown,
   FileText,
   CheckCircle2,
@@ -11,10 +11,9 @@ import {
   BarChart3,
   Home,
   MessageCircleQuestion,
-  Loader2
+  Loader2,
 } from "lucide-react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import LessonContent from "@/components/course/LessonContent";
 import CourseChatbot from "@/components/course/CourseChatbot";
 import { useAuth } from "@/contexts/AuthContext";
@@ -72,6 +71,7 @@ const CoursePage = () => {
   const { user, loading } = useAuth();
   const [expandedModules, setExpandedModules] = useState<string[]>(["m1", "m2"]);
   const [activeLesson, setActiveLesson] = useState("l4");
+  const [completedLessonIds, setCompletedLessonIds] = useState<Set<string>>(() => new Set());
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -82,32 +82,52 @@ const CoursePage = () => {
   }, [user, loading, navigate]);
 
   const toggleModule = (moduleId: string) => {
-    setExpandedModules(prev =>
-      prev.includes(moduleId)
-        ? prev.filter(id => id !== moduleId)
-        : [...prev, moduleId]
+    setExpandedModules((prev) =>
+      prev.includes(moduleId) ? prev.filter((id) => id !== moduleId) : [...prev, moduleId]
     );
   };
 
-  const allLessons = mockCourse.modules.flatMap(m => m.lessons);
-  
-  const currentLesson = allLessons.find(l => l.id === activeLesson);
-  
+  const allLessons = useMemo(() => mockCourse.modules.flatMap((m) => m.lessons), []);
+
+  const currentLesson = allLessons.find((l) => l.id === activeLesson);
+
   // Find the current module's assignment
-  const currentModule = mockCourse.modules.find(m => 
-    m.lessons.some(l => l.id === activeLesson)
+  const currentModule = mockCourse.modules.find((m) =>
+    m.lessons.some((l) => l.id === activeLesson)
   );
   const currentAssignment = currentModule?.assignment;
 
-  const handleNavigate = (lessonId: string) => {
-    setActiveLesson(lessonId);
-    // Ensure the module containing the lesson is expanded
-    const module = mockCourse.modules.find(m => 
-      m.lessons.some(l => l.id === lessonId)
-    );
-    if (module && !expandedModules.includes(module.id)) {
-      setExpandedModules(prev => [...prev, module.id]);
+  const handleNavigate = (
+    lessonId: string,
+    options?: { completeLessonId?: string }
+  ) => {
+    if (options?.completeLessonId) {
+      setCompletedLessonIds((prev) => {
+        const next = new Set(prev);
+        next.add(options.completeLessonId as string);
+        return next;
+      });
     }
+
+    setActiveLesson(lessonId);
+
+    // Ensure the module containing the lesson is expanded
+    const module = mockCourse.modules.find((m) =>
+      m.lessons.some((l) => l.id === lessonId)
+    );
+    if (module) {
+      setExpandedModules((prev) =>
+        prev.includes(module.id) ? prev : [...prev, module.id]
+      );
+    }
+  };
+
+  const isLessonCompleted = (lessonId: string) => completedLessonIds.has(lessonId);
+
+  const isModuleCompleted = (moduleId: string) => {
+    const module = mockCourse.modules.find((m) => m.id === moduleId);
+    if (!module) return false;
+    return module.lessons.every((l) => isLessonCompleted(l.id));
   };
 
   if (loading) {
@@ -154,7 +174,7 @@ const CoursePage = () => {
                 <span className="flex-1 text-sm font-medium text-foreground line-clamp-2">
                   {module.title}
                 </span>
-                {module.completed && (
+                {isModuleCompleted(module.id) && (
                   <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
                 )}
               </button>
@@ -162,24 +182,28 @@ const CoursePage = () => {
               {/* Lessons */}
               {expandedModules.includes(module.id) && (
                 <div className="ml-6 space-y-1 mt-1">
-                  {module.lessons.map((lesson) => (
-                    <button
-                      key={lesson.id}
-                      onClick={() => setActiveLesson(lesson.id)}
-                      className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm transition-colors ${
-                        activeLesson === lesson.id
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                          : "text-muted-foreground hover:bg-sidebar-accent/50"
-                      }`}
-                    >
-                      {lesson.completed ? (
-                        <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
-                      ) : (
-                        <Circle className="w-4 h-4 shrink-0" />
-                      )}
-                      <span className="line-clamp-1">{lesson.title}</span>
-                    </button>
-                  ))}
+                  {module.lessons.map((lesson) => {
+                    const completed = isLessonCompleted(lesson.id);
+
+                    return (
+                      <button
+                        key={lesson.id}
+                        onClick={() => handleNavigate(lesson.id)}
+                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm transition-colors ${
+                          activeLesson === lesson.id
+                            ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                            : "text-muted-foreground hover:bg-sidebar-accent/50"
+                        }`}
+                      >
+                        {completed ? (
+                          <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
+                        ) : (
+                          <Circle className="w-4 h-4 shrink-0" />
+                        )}
+                        <span className="line-clamp-1">{lesson.title}</span>
+                      </button>
+                    );
+                  })}
 
                   {/* Assignment link */}
                   <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
