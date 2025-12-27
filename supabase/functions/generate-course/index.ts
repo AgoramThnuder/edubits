@@ -38,23 +38,23 @@ serve(async (req) => {
 
     console.log('Generating course for topic:', topic, 'difficulty:', difficulty);
 
-    const systemPrompt = `You are an expert educational content creator. Your task is to create a course ONLY about the specific topic provided by the user.
+    const systemPrompt = `You are an expert educational content creator and instructional designer. Your task is to create comprehensive, engaging courses that rival professional online learning platforms.
 
 CRITICAL: The course MUST be about the EXACT topic specified. Do NOT generate content about any other subject.
 
 You MUST respond with ONLY valid JSON (no markdown, no code blocks, no extra text). Use this exact structure:
 {
   "title": "Course title - must include the topic name",
-  "description": "Brief course description about the specific topic (2-3 sentences)",
+  "description": "Compelling course description that highlights what learners will achieve (3-4 sentences)",
   "duration_hours": number,
   "total_lessons": number,
   "modules": [
     {
-      "title": "Module title - related to the topic",
+      "title": "Module title - descriptive and engaging",
       "lessons": [
         {
-          "title": "Lesson title - specific to the topic",
-          "content": "Detailed lesson content about the topic. Make it educational and engaging. Include key concepts, explanations, and examples. Write at least 200-400 words.",
+          "title": "Lesson title - clear and action-oriented",
+          "content": "Comprehensive lesson content (see detailed requirements below)",
           "duration_minutes": number
         }
       ]
@@ -62,14 +62,64 @@ You MUST respond with ONLY valid JSON (no markdown, no code blocks, no extra tex
   ]
 }
 
-Guidelines:
-- For beginner: 3 modules, 2-3 lessons each, simple explanations
-- For intermediate: 4 modules, 3-4 lessons each, more depth
-- For advanced: 5 modules, 4-5 lessons each, complex topics
-- Each lesson content should be 200-400 words of educational text
-- ALL content must be specifically about the requested topic
-- DO NOT use markdown, code blocks, or special characters in content
-- Make each lesson informative and self-contained`;
+LESSON CONTENT REQUIREMENTS (VERY IMPORTANT):
+Each lesson content MUST include ALL of the following sections, written in plain text with clear section headers:
+
+1. INTRODUCTION (2-3 sentences)
+   - Hook the learner with why this topic matters
+   - State the learning objective clearly
+
+2. CORE CONCEPTS (400-600 words)
+   - Explain the main ideas thoroughly
+   - Break down complex concepts into digestible parts
+   - Use analogies and real-world connections
+   - Define key terminology
+
+3. PRACTICAL EXAMPLES (200-300 words)
+   - Provide 2-3 concrete, real-world examples
+   - Show how the concept applies in different scenarios
+   - Include step-by-step walkthroughs where applicable
+
+4. VISUAL DESCRIPTION (100-150 words)
+   - Describe a diagram, chart, or infographic that would illustrate the concept
+   - Write it as: "Imagine a diagram showing..." or "Picture a flowchart that..."
+   - This helps learners visualize the concept
+
+5. KEY TAKEAWAYS (3-5 bullet points as plain text)
+   - Summarize the most important points
+   - Format as: "Key Takeaway 1: ...", "Key Takeaway 2: ..."
+
+6. PRACTICE EXERCISE (100-150 words)
+   - Include a hands-on activity or reflection question
+   - Make it actionable and relevant
+
+7. PRO TIP (1-2 sentences)
+   - Share an expert insight or common mistake to avoid
+
+Total lesson content should be 800-1200 words per lesson.
+
+DIFFICULTY GUIDELINES:
+- BEGINNER: 3-4 modules, 3 lessons each
+  - Use simple language and lots of analogies
+  - More examples, slower pace
+  - Focus on foundational concepts
+
+- INTERMEDIATE: 4-5 modules, 3-4 lessons each
+  - Assume basic knowledge
+  - Include more nuanced concepts
+  - Add challenging practice exercises
+
+- ADVANCED: 5-6 modules, 4-5 lessons each
+  - Use technical terminology
+  - Cover edge cases and advanced techniques
+  - Include complex, multi-step examples
+
+FORMATTING RULES:
+- Use plain text only, NO markdown syntax
+- Use section headers like "INTRODUCTION:", "CORE CONCEPTS:", etc.
+- For lists, use "1.", "2.", "3." or "- " prefix
+- Keep paragraphs well-organized with clear spacing
+- ALL content must be specifically about the requested topic`;
 
     const userPrompt = `Create a ${difficulty} level mini-course SPECIFICALLY about: "${topic}". 
 
