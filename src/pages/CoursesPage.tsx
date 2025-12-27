@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
-import { BookOpen, Clock, Users, ChevronRight, Search, X, Loader2, Trash2 } from "lucide-react";
+import { BookOpen, Clock, Users, ChevronRight, Search, X, Loader2, Trash2, Plus, Sparkles } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCourses, useUserEnrollments, useEnrollInCourse, useCategories, useDeleteCourse } from "@/hooks/useCourses";
 import NotificationsDropdown from "@/components/dashboard/NotificationsDropdown";
 import AccountDropdown from "@/components/dashboard/AccountDropdown";
+import CreateCourseModal from "@/components/dashboard/CreateCourseModal";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -30,6 +31,7 @@ const navItems = [
 const CoursesPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -154,9 +156,36 @@ const CoursesPage = () => {
 
       {/* Main Content */}
       <main className="max-w-[1600px] mx-auto px-6 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-semibold text-foreground mb-2">Courses</h1>
-          <p className="text-muted-foreground">Continue learning or explore new topics</p>
+        {/* Header with Create Course Card */}
+        <div className="flex flex-col lg:flex-row gap-6 mb-8">
+          <div className="flex-1">
+            <h1 className="text-3xl font-semibold text-foreground mb-2">Courses</h1>
+            <p className="text-muted-foreground">Continue learning or explore new topics</p>
+          </div>
+          
+          {/* Create Course Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="lg:w-80"
+          >
+            <div className="dashboard-card h-full bg-card flex flex-col items-center justify-center text-center py-6">
+              <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center mb-3">
+                <Sparkles className="w-6 h-6 text-accent" />
+              </div>
+              <h3 className="text-base font-semibold text-foreground mb-1">
+                Create New Course
+              </h3>
+              <p className="text-xs text-muted-foreground mb-4 leading-relaxed max-w-xs">
+                Generate an AI-powered course on any topic
+              </p>
+              <Button onClick={() => setIsCreateModalOpen(true)} size="sm" className="gap-2">
+                <Plus className="w-4 h-4" />
+                Create Course
+              </Button>
+            </div>
+          </motion.div>
         </div>
 
         {/* Search and Filter */}
@@ -343,6 +372,11 @@ const CoursesPage = () => {
           </div>
         )}
       </main>
+
+      <CreateCourseModal 
+        isOpen={isCreateModalOpen} 
+        onClose={() => setIsCreateModalOpen(false)} 
+      />
     </div>
   );
 };
