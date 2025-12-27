@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
-import { ClipboardList, CheckCircle2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ClipboardList, CheckCircle2, XCircle } from "lucide-react";
+import { forwardRef, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
@@ -22,7 +22,8 @@ interface AssignmentContentProps {
   onBackToLessons: () => void;
 }
 
-export default function AssignmentContent({ assignment, onBackToLessons }: AssignmentContentProps) {
+const AssignmentContent = forwardRef<HTMLDivElement, AssignmentContentProps>(
+  ({ assignment, onBackToLessons }, ref) => {
   const questions = useMemo<Question[]>(
     () => [
       {
@@ -109,21 +110,24 @@ export default function AssignmentContent({ assignment, onBackToLessons }: Assig
                             disabled={submitted}
                             onClick={() => setAnswers((prev) => ({ ...prev, [q.id]: o.id }))}
                             className={
-                              "w-full text-left rounded-lg border px-4 py-3 transition-colors " +
+                              "w-full text-left rounded-lg border-2 px-4 py-3 transition-all " +
                               (isCorrect
-                                ? "border-success/40 bg-success/10"
+                                ? "border-green-500 bg-green-500/10"
                                 : isWrongSelected
-                                  ? "border-destructive/40 bg-destructive/10"
+                                  ? "border-red-500 bg-red-500/10"
                                   : isSelected
-                                    ? "border-primary/40 bg-primary/5"
-                                    : "border-border hover:border-primary/30")
+                                    ? "border-blue-500 bg-blue-500/5"
+                                    : "border-border hover:border-blue-300")
                             }
                           >
                             <div className="flex items-center justify-between gap-3">
                               <span className="text-foreground">{o.label}</span>
-                              {isCorrect ? (
-                                <CheckCircle2 className="w-4 h-4 text-success" />
-                              ) : null}
+                              {isCorrect && (
+                                <CheckCircle2 className="w-5 h-5 text-green-500" />
+                              )}
+                              {isWrongSelected && (
+                                <XCircle className="w-5 h-5 text-red-500" />
+                              )}
                             </div>
                           </button>
                         );
@@ -162,4 +166,8 @@ export default function AssignmentContent({ assignment, onBackToLessons }: Assig
       </div>
     </div>
   );
-}
+});
+
+AssignmentContent.displayName = "AssignmentContent";
+
+export default AssignmentContent;
