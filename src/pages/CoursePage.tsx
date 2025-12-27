@@ -124,12 +124,50 @@ const CoursePage = () => {
     }
   };
 
-  const openAssignment = (moduleId: string) => {
+  const openAssignment = (moduleId: string, options?: { completeLessonId?: string }) => {
+    if (options?.completeLessonId) {
+      setCompletedLessonIds((prev) => {
+        const next = new Set(prev);
+        next.add(options.completeLessonId as string);
+        return next;
+      });
+    }
     setActiveAssignmentModuleId(moduleId);
     // keep sidebar in sync
     if (!expandedModules.includes(moduleId)) {
       setExpandedModules((prev) => [...prev, moduleId]);
     }
+  };
+
+  const handleQuizComplete = () => {
+    // Find current module and navigate to first lesson of next module
+    if (!activeAssignmentModuleId) return;
+    
+    const currentModuleIndex = mockCourse.modules.findIndex(m => m.id === activeAssignmentModuleId);
+    const nextModule = mockCourse.modules[currentModuleIndex + 1];
+    
+    if (nextModule && nextModule.lessons.length > 0) {
+      setActiveAssignmentModuleId(null);
+      setActiveLesson(nextModule.lessons[0].id);
+      if (!expandedModules.includes(nextModule.id)) {
+        setExpandedModules((prev) => [...prev, nextModule.id]);
+      }
+    } else {
+      // Last module quiz completed
+      setActiveAssignmentModuleId(null);
+    }
+  };
+
+  const handleFinishCourse = () => {
+    // Mark last lesson as completed
+    const lastModule = mockCourse.modules[mockCourse.modules.length - 1];
+    const lastLesson = lastModule.lessons[lastModule.lessons.length - 1];
+    setCompletedLessonIds((prev) => {
+      const next = new Set(prev);
+      next.add(lastLesson.id);
+      return next;
+    });
+    // Could navigate to a completion page or show a toast
   };
 
   const isLessonCompleted = (lessonId: string) => completedLessonIds.has(lessonId);
@@ -139,6 +177,20 @@ const CoursePage = () => {
     if (!module) return false;
     return module.lessons.every((l) => isLessonCompleted(l.id));
   };
+
+  // Check if current lesson is the last in its module
+  const isLastLessonInCurrentModule = useMemo(() => {
+    if (!currentModule || !currentLesson) return false;
+    const lastLesson = currentModule.lessons[currentModule.lessons.length - 1];
+    return lastLesson.id === currentLesson.id;
+  }, [currentModule, currentLesson]);
+
+  // Check if current lesson is the last lesson of the last module
+  const isLastLessonInCourse = useMemo(() => {
+    const lastModule = mockCourse.modules[mockCourse.modules.length - 1];
+    const lastLesson = lastModule.lessons[lastModule.lessons.length - 1];
+    return currentLesson?.id === lastLesson.id;
+  }, [currentLesson]);
 
   if (loading) {
     return (
@@ -257,7 +309,7 @@ const CoursePage = () => {
         {activeAssignment ? (
           <AssignmentContent
             assignment={activeAssignment}
-            onBackToLessons={() => setActiveAssignmentModuleId(null)}
+            onBackToLessons={handleQuizComplete}
           />
         ) : (
           <LessonContent
@@ -266,6 +318,10 @@ const CoursePage = () => {
             onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
             sidebarCollapsed={sidebarCollapsed}
             onNavigate={handleNavigate}
+            onOpenQuiz={() => currentModule && openAssignment(currentModule.id, { completeLessonId: currentLesson?.id })}
+            onFinishCourse={handleFinishCourse}
+            isLastLessonInModule={isLastLessonInCurrentModule}
+            isLastLessonInCourse={isLastLessonInCourse}
           />
         )}
 
