@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import LessonContent from "@/components/course/LessonContent";
+import AssignmentContent from "@/components/course/AssignmentContent";
 import CourseChatbot from "@/components/course/CourseChatbot";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -71,6 +72,7 @@ const CoursePage = () => {
   const { user, loading } = useAuth();
   const [expandedModules, setExpandedModules] = useState<string[]>(["m1", "m2"]);
   const [activeLesson, setActiveLesson] = useState("l4");
+  const [activeAssignmentModuleId, setActiveAssignmentModuleId] = useState<string | null>(null);
   const [completedLessonIds, setCompletedLessonIds] = useState<Set<string>>(() => new Set());
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -91,11 +93,13 @@ const CoursePage = () => {
 
   const currentLesson = allLessons.find((l) => l.id === activeLesson);
 
-  // Find the current module's assignment
   const currentModule = mockCourse.modules.find((m) =>
     m.lessons.some((l) => l.id === activeLesson)
   );
-  const currentAssignment = currentModule?.assignment;
+
+  const activeAssignment = activeAssignmentModuleId
+    ? mockCourse.modules.find((m) => m.id === activeAssignmentModuleId)?.assignment
+    : null;
 
   const handleNavigate = (
     lessonId: string,
@@ -109,16 +113,22 @@ const CoursePage = () => {
       });
     }
 
+    setActiveAssignmentModuleId(null);
     setActiveLesson(lessonId);
 
-    // Ensure the module containing the lesson is expanded
     const module = mockCourse.modules.find((m) =>
       m.lessons.some((l) => l.id === lessonId)
     );
     if (module) {
-      setExpandedModules((prev) =>
-        prev.includes(module.id) ? prev : [...prev, module.id]
-      );
+      setExpandedModules((prev) => (prev.includes(module.id) ? prev : [...prev, module.id]));
+    }
+  };
+
+  const openAssignment = (moduleId: string) => {
+    setActiveAssignmentModuleId(moduleId);
+    // keep sidebar in sync
+    if (!expandedModules.includes(moduleId)) {
+      setExpandedModules((prev) => [...prev, moduleId]);
     }
   };
 
@@ -206,15 +216,24 @@ const CoursePage = () => {
                   })}
 
                   {/* Assignment link */}
-                  <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
+                  <button
+                    type="button"
+                    onClick={() => openAssignment(module.id)}
+                    className={
+                      "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm transition-colors " +
+                      (activeAssignmentModuleId === module.id
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                        : "text-muted-foreground hover:bg-sidebar-accent/50")
+                    }
+                  >
                     <ClipboardList className="w-4 h-4 shrink-0" />
-                    <span>{module.assignment.title}</span>
+                    <span className="line-clamp-1">{module.assignment.title}</span>
                     {module.assignment.score !== null && (
                       <span className="ml-auto text-xs bg-success/10 text-success px-2 py-0.5 rounded-full">
                         {module.assignment.score}%
                       </span>
                     )}
-                  </div>
+                  </button>
                 </div>
               )}
             </div>
@@ -235,15 +254,20 @@ const CoursePage = () => {
 
       {/* Main content */}
       <main className="flex-1 min-w-0">
-        {/* Lesson content */}
-        <LessonContent 
-          lesson={currentLesson}
-          allLessons={allLessons}
-          currentAssignment={currentAssignment}
-          onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
-          sidebarCollapsed={sidebarCollapsed}
-          onNavigate={handleNavigate}
-        />
+        {activeAssignment ? (
+          <AssignmentContent
+            assignment={activeAssignment}
+            onBackToLessons={() => setActiveAssignmentModuleId(null)}
+          />
+        ) : (
+          <LessonContent
+            lesson={currentLesson}
+            allLessons={allLessons}
+            onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
+            sidebarCollapsed={sidebarCollapsed}
+            onNavigate={handleNavigate}
+          />
+        )}
 
         {/* Floating chat button */}
         <motion.button
