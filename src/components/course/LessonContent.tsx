@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Menu, ClipboardList, CheckCircle2, Clock, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,14 +24,14 @@ interface LessonContentProps {
   onNavigate: (lessonId: string) => void;
 }
 
-const LessonContent = ({ 
+const LessonContent = forwardRef<HTMLDivElement, LessonContentProps>(({ 
   lesson, 
   allLessons, 
   currentAssignment,
   onToggleSidebar, 
   sidebarCollapsed,
   onNavigate 
-}: LessonContentProps) => {
+}, ref) => {
   if (!lesson) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -44,7 +45,7 @@ const LessonContent = ({
   const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
 
   return (
-    <div className="min-h-screen">
+    <div ref={ref} className="min-h-screen">
       {/* Toolbar */}
       <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border px-4 py-3">
         <div className="flex items-center gap-4">
@@ -257,6 +258,8 @@ const LessonContent = ({
       </div>
     </div>
   );
-};
+});
+
+LessonContent.displayName = "LessonContent";
 
 export default LessonContent;
