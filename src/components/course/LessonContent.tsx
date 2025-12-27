@@ -1,6 +1,6 @@
 import { forwardRef } from "react";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Menu, ClipboardList, CheckCircle2, Clock, FileText } from "lucide-react";
+import { ChevronLeft, ChevronRight, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface Lesson {
@@ -9,16 +9,9 @@ interface Lesson {
   completed: boolean;
 }
 
-interface Assignment {
-  id: string;
-  title: string;
-  score: number | null;
-}
-
 interface LessonContentProps {
   lesson: Lesson | undefined;
   allLessons: Lesson[];
-  currentAssignment?: Assignment;
   onToggleSidebar: () => void;
   sidebarCollapsed: boolean;
   onNavigate: (lessonId: string, options?: { completeLessonId?: string }) => void;
@@ -27,7 +20,6 @@ interface LessonContentProps {
 const LessonContent = forwardRef<HTMLDivElement, LessonContentProps>(({ 
   lesson, 
   allLessons, 
-  currentAssignment,
   onToggleSidebar, 
   sidebarCollapsed,
   onNavigate 
@@ -175,63 +167,6 @@ const LessonContent = forwardRef<HTMLDivElement, LessonContentProps>(({
                 <strong> classification</strong> (predicting categories) and <strong>regression</strong> (predicting numbers).
               </p>
             </div>
-
-            {/* Quiz & Assignments Section */}
-            {currentAssignment && (
-              <section className="mb-10">
-                <h2 className="text-xl font-display font-medium text-foreground mb-4 flex items-center gap-2">
-                  <ClipboardList className="w-5 h-5 text-primary" />
-                  Quiz & Assignments
-                </h2>
-                <div className="space-y-3">
-                  <div className="p-4 rounded-lg bg-card border border-border flex items-center justify-between hover:border-primary/50 transition-colors cursor-pointer">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                        currentAssignment.score !== null 
-                          ? 'bg-success/10 text-success' 
-                          : 'bg-muted text-muted-foreground'
-                      }`}>
-                        {currentAssignment.score !== null ? (
-                          <CheckCircle2 className="w-5 h-5" />
-                        ) : (
-                          <FileText className="w-5 h-5" />
-                        )}
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground">{currentAssignment.title}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {currentAssignment.score !== null 
-                            ? `Completed • Score: ${currentAssignment.score}%` 
-                            : '10 questions • ~15 min'}
-                        </p>
-                      </div>
-                    </div>
-                    <Button 
-                      variant={currentAssignment.score !== null ? "outline" : "default"} 
-                      size="sm"
-                    >
-                      {currentAssignment.score !== null ? 'Review' : 'Start Quiz'}
-                    </Button>
-                  </div>
-                  
-                  {/* Practice Exercise */}
-                  <div className="p-4 rounded-lg bg-card border border-border flex items-center justify-between hover:border-primary/50 transition-colors cursor-pointer">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-muted text-muted-foreground flex items-center justify-center">
-                        <Clock className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground">Practice Exercise</p>
-                        <p className="text-sm text-muted-foreground">Hands-on coding challenge • ~20 min</p>
-                      </div>
-                    </div>
-                    <Button variant="outline" size="sm">
-                      Start
-                    </Button>
-                  </div>
-                </div>
-              </section>
-            )}
 
             {/* Navigation */}
             <div className="flex items-center justify-between pt-8 border-t border-border">
