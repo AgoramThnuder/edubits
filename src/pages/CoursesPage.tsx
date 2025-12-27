@@ -210,14 +210,6 @@ const CoursesPage = () => {
               <div key={i} className="dashboard-card h-80 animate-pulse bg-secondary/50" />
             ))}
           </div>
-        ) : filteredCourses.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <BookOpen className="w-16 h-16 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">No courses found</h3>
-            <p className="text-muted-foreground">
-              {searchQuery ? "Try adjusting your search" : "No courses available yet"}
-            </p>
-          </div>
         ) : (
           /* Course Grid */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -246,127 +238,145 @@ const CoursesPage = () => {
               </div>
             </motion.div>
 
-            {filteredCourses.map((course, index) => {
-              const isEnrolled = enrolledCourseIds.has(course.id);
-              const enrollment = enrollments.find((e) => e.course_id === course.id);
+            {filteredCourses.length === 0 && !searchQuery ? (
+              <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
+                <BookOpen className="w-12 h-12 text-muted-foreground mb-3" />
+                <h3 className="text-lg font-semibold text-foreground mb-1">No courses yet</h3>
+                <p className="text-muted-foreground text-sm">
+                  Create your first AI-powered course above!
+                </p>
+              </div>
+            ) : filteredCourses.length === 0 && searchQuery ? (
+              <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
+                <Search className="w-12 h-12 text-muted-foreground mb-3" />
+                <h3 className="text-lg font-semibold text-foreground mb-1">No matches found</h3>
+                <p className="text-muted-foreground text-sm">
+                  Try adjusting your search query
+                </p>
+              </div>
+            ) : (
+              filteredCourses.map((course, index) => {
+                const isEnrolled = enrolledCourseIds.has(course.id);
+                const enrollment = enrollments.find((e) => e.course_id === course.id);
 
-              return (
-                <motion.div
-                  key={course.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: (index + 1) * 0.05 }}
-                >
-                    <div 
-                      className="dashboard-card card-lift overflow-hidden cursor-pointer group p-4"
-                      onClick={() => navigate(`/course/${course.id}`)}
-                    >
-                      {/* Course Image */}
-                      <div className="relative h-28 -mx-4 -mt-4 mb-3 overflow-hidden">
-                        <img 
-                          src={course.image_url || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=250&fit=crop"} 
-                          alt={course.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                        <div className="absolute top-2 left-2">
-                          <span className="px-2 py-0.5 bg-card/90 backdrop-blur-sm rounded-full text-[10px] font-medium text-foreground">
-                            {course.categories?.name || "General"}
-                          </span>
-                        </div>
-                        {/* Delete button - only show for course creator */}
-                        {course.created_by === user?.id && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                }}
-                                className="absolute top-2 right-2 p-1.5 bg-destructive/90 backdrop-blur-sm rounded-full text-destructive-foreground hover:bg-destructive transition-colors z-10"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Course</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete "{course.title}"? This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
+                return (
+                  <motion.div
+                    key={course.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: (index + 1) * 0.05 }}
+                  >
+                      <div 
+                        className="dashboard-card card-lift overflow-hidden cursor-pointer group p-4"
+                        onClick={() => navigate(`/course/${course.id}`)}
+                      >
+                        {/* Course Image */}
+                        <div className="relative h-28 -mx-4 -mt-4 mb-3 overflow-hidden">
+                          <img 
+                            src={course.image_url || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=250&fit=crop"} 
+                            alt={course.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          <div className="absolute top-2 left-2">
+                            <span className="px-2 py-0.5 bg-card/90 backdrop-blur-sm rounded-full text-[10px] font-medium text-foreground">
+                              {course.categories?.name || "General"}
+                            </span>
+                          </div>
+                          {/* Delete button - only show for course creator */}
+                          {course.created_by === user?.id && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    handleDeleteCourse(course.id, e);
                                   }}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  className="absolute top-2 right-2 p-1.5 bg-destructive/90 backdrop-blur-sm rounded-full text-destructive-foreground hover:bg-destructive transition-colors z-10"
                                 >
-                                  {deleteCourse.isPending ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                  ) : (
-                                    "Delete"
-                                  )}
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Course</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete "{course.title}"? This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteCourse(course.id, e);
+                                    }}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    {deleteCourse.isPending ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                      "Delete"
+                                    )}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                        </div>
+
+                        {/* Course Info */}
+                        <h3 className="text-sm font-semibold text-foreground mb-1 group-hover:text-primary transition-colors line-clamp-2">
+                          {course.title}
+                        </h3>
+                        <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+                          {course.description || "No description available"}
+                        </p>
+
+                        {/* Stats */}
+                        <div className="flex items-center gap-3 text-[10px] text-muted-foreground mb-3">
+                          <span className="flex items-center gap-1">
+                            <BookOpen className="w-3 h-3" />
+                            {course.total_lessons} lessons
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {course.duration_hours}h
+                          </span>
+                        </div>
+
+                        {/* Progress or Enroll */}
+                        {isEnrolled && enrollment ? (
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between text-[10px]">
+                              <span className="text-muted-foreground">Progress</span>
+                              <span className="font-medium text-foreground">{enrollment.progress}%</span>
+                            </div>
+                            <Progress value={enrollment.progress} className="h-1" />
+                          </div>
+                        ) : (
+                          <Button
+                            size="sm"
+                            className="w-full h-7 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEnroll(course.id, e);
+                            }}
+                            disabled={enrollInCourse.isPending}
+                          >
+                            {enrollInCourse.isPending ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <>
+                                Enroll Now
+                                <ChevronRight className="w-3 h-3 ml-1" />
+                              </>
+                            )}
+                          </Button>
                         )}
                       </div>
-
-                      {/* Course Info */}
-                      <h3 className="text-sm font-semibold text-foreground mb-1 group-hover:text-primary transition-colors line-clamp-2">
-                        {course.title}
-                      </h3>
-                      <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
-                        {course.description || "No description available"}
-                      </p>
-
-                      {/* Stats */}
-                      <div className="flex items-center gap-3 text-[10px] text-muted-foreground mb-3">
-                        <span className="flex items-center gap-1">
-                          <BookOpen className="w-3 h-3" />
-                          {course.total_lessons} lessons
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {course.duration_hours}h
-                        </span>
-                      </div>
-
-                      {/* Progress or Enroll */}
-                      {isEnrolled && enrollment ? (
-                        <div className="space-y-1.5">
-                          <div className="flex items-center justify-between text-[10px]">
-                            <span className="text-muted-foreground">Progress</span>
-                            <span className="font-medium text-foreground">{enrollment.progress}%</span>
-                          </div>
-                          <Progress value={enrollment.progress} className="h-1" />
-                        </div>
-                      ) : (
-                        <Button
-                          size="sm"
-                          className="w-full h-7 text-xs"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEnroll(course.id, e);
-                          }}
-                          disabled={enrollInCourse.isPending}
-                        >
-                          {enrollInCourse.isPending ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : (
-                            <>
-                              Enroll Now
-                              <ChevronRight className="w-3 h-3 ml-1" />
-                            </>
-                          )}
-                        </Button>
-                      )}
-                    </div>
-                </motion.div>
-              );
-            })}
+                  </motion.div>
+                );
+              })
+            )}
           </div>
         )}
       </main>
