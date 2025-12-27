@@ -21,7 +21,7 @@ interface LessonContentProps {
   currentAssignment?: Assignment;
   onToggleSidebar: () => void;
   sidebarCollapsed: boolean;
-  onNavigate: (lessonId: string) => void;
+  onNavigate: (lessonId: string, options?: { completeLessonId?: string }) => void;
 }
 
 const LessonContent = forwardRef<HTMLDivElement, LessonContentProps>(({ 
@@ -247,7 +247,9 @@ const LessonContent = forwardRef<HTMLDivElement, LessonContentProps>(({
               <Button 
                 className="gap-2"
                 disabled={!nextLesson}
-                onClick={() => nextLesson && onNavigate(nextLesson.id)}
+                onClick={() =>
+                  nextLesson && onNavigate(nextLesson.id, { completeLessonId: lesson.id })
+                }
               >
                 Next Lesson
                 <ChevronRight className="w-4 h-4" />
