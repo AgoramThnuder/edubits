@@ -90,24 +90,31 @@ const CoursePage = () => {
   useEffect(() => {
     startTimeRef.current = Date.now();
     
+    // Log initial activity when starting to study
+    if (user) {
+      logActivity.mutate(0.05); // Log 3 minutes as initial activity
+    }
+    
     return () => {
       const timeSpent = (Date.now() - startTimeRef.current) / 1000 / 60 / 60; // Convert to hours
-      if (timeSpent >= 0.01 && user) { // Only log if spent at least ~30 seconds
+      if (timeSpent >= 0.008 && user) { // Only log if spent at least ~30 seconds
         logActivity.mutate(timeSpent);
       }
     };
-  }, [activeLesson]);
+  }, [activeLesson, user]);
 
-  // Log activity periodically (every 5 minutes)
+  // Log activity periodically (every 2 minutes)
   useEffect(() => {
+    if (!user) return;
+    
     const interval = setInterval(() => {
       const now = Date.now();
       const timeSpent = (now - startTimeRef.current) / 1000 / 60 / 60;
-      if (timeSpent >= 0.08 && user) { // ~5 minutes
+      if (timeSpent >= 0.03) { // ~2 minutes
         logActivity.mutate(timeSpent);
         startTimeRef.current = now;
       }
-    }, 5 * 60 * 1000);
+    }, 2 * 60 * 1000);
 
     return () => clearInterval(interval);
   }, [user]);

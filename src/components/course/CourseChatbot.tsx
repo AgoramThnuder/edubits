@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Send, Loader2, Bot, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from "@/hooks/use-toast";
 
 interface CourseChatbotProps {
   isOpen: boolean;
@@ -18,6 +19,8 @@ interface Message {
   role: "user" | "assistant";
   content: string;
 }
+
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/course-chat`;
 
 const CourseChatbot = forwardRef<HTMLDivElement, CourseChatbotProps>(({ isOpen, onClose, context }, ref) => {
   const [messages, setMessages] = useState<Message[]>([
@@ -39,6 +42,17 @@ const CourseChatbot = forwardRef<HTMLDivElement, CourseChatbotProps>(({ isOpen, 
     scrollToBottom();
   }, [messages]);
 
+  // Reset messages when context changes
+  useEffect(() => {
+    setMessages([
+      {
+        id: "1",
+        role: "assistant",
+        content: `I'm here to help you understand "${context.lesson || context.course}". What would you like to know?`,
+      },
+    ]);
+  }, [context.lesson, context.course]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
@@ -49,34 +63,129 @@ const CourseChatbot = forwardRef<HTMLDivElement, CourseChatbotProps>(({ isOpen, 
       content: input.trim(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
     setInput("");
     setIsLoading(true);
 
-    // Simulate AI response (in real app, this would call the AI)
-    setTimeout(() => {
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: getSimulatedResponse(input.trim()),
-      };
-      setMessages(prev => [...prev, aiMessage]);
-      setIsLoading(false);
-    }, 1500);
-  };
+    let assistantContent = "";
 
-  const getSimulatedResponse = (question: string): string => {
-    const lowerQ = question.toLowerCase();
-    
-    if (lowerQ.includes("supervised") && lowerQ.includes("unsupervised")) {
-      return "Great question! The main difference is in the training data:\n\n**Supervised learning** uses labeled data where we know the correct outputs. It's like learning with an answer key.\n\n**Unsupervised learning** uses unlabeled data and finds hidden patterns on its own. It's like exploring without a guide.\n\nWould you like me to give you specific examples of each?";
+    try {
+      const resp = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
+          context,
+        }),
+      });
+
+      if (!resp.ok) {
+        if (resp.status === 429) {
+          toast({
+            title: "Rate limit exceeded",
+            description: "Please try again in a moment.",
+            variant: "destructive",
+          });
+          throw new Error("Rate limit exceeded");
+        }
+        if (resp.status === 402) {
+          toast({
+            title: "AI credits exhausted",
+            description: "Please add credits to continue.",
+            variant: "destructive",
+          });
+          throw new Error("Credits exhausted");
+        }
+        throw new Error("Failed to get response");
+      }
+
+      if (!resp.body) throw new Error("No response body");
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let textBuffer = "";
+      let streamDone = false;
+
+      // Create initial assistant message
+      const assistantId = (Date.now() + 1).toString();
+      setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "" }]);
+
+      while (!streamDone) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        textBuffer += decoder.decode(value, { stream: true });
+
+        let newlineIndex: number;
+        while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
+          let line = textBuffer.slice(0, newlineIndex);
+          textBuffer = textBuffer.slice(newlineIndex + 1);
+
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (line.startsWith(":") || line.trim() === "") continue;
+          if (!line.startsWith("data: ")) continue;
+
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") {
+            streamDone = true;
+            break;
+          }
+
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (content) {
+              assistantContent += content;
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantId ? { ...m, content: assistantContent } : m
+                )
+              );
+            }
+          } catch {
+            textBuffer = line + "\n" + textBuffer;
+            break;
+          }
+        }
+      }
+
+      // Final flush
+      if (textBuffer.trim()) {
+        for (let raw of textBuffer.split("\n")) {
+          if (!raw) continue;
+          if (raw.endsWith("\r")) raw = raw.slice(0, -1);
+          if (raw.startsWith(":") || raw.trim() === "") continue;
+          if (!raw.startsWith("data: ")) continue;
+          const jsonStr = raw.slice(6).trim();
+          if (jsonStr === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (content) {
+              assistantContent += content;
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantId ? { ...m, content: assistantContent } : m
+                )
+              );
+            }
+          } catch {
+            /* ignore */
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Chat error:", error);
+      if (!assistantContent) {
+        // Remove the empty assistant message if no content was received
+        setMessages((prev) => prev.filter((m) => m.content !== ""));
+      }
+    } finally {
+      setIsLoading(false);
     }
-    
-    if (lowerQ.includes("example") || lowerQ.includes("real world")) {
-      return "Here are some real-world examples:\n\n1. **Netflix recommendations** - Uses your viewing history (labeled data) to suggest shows\n2. **Email spam filters** - Trained on labeled spam/not-spam emails\n3. **Voice assistants** - Trained on labeled audio-text pairs\n\nEach of these learns from examples where we already know the right answer!";
-    }
-    
-    return "That's an interesting question about the concept we're studying. In supervised learning, the key idea is that we have *labeled* training examples. The algorithm learns the relationship between inputs and outputs from these examples.\n\nIs there a specific part of this concept you'd like me to explain in more detail?";
   };
 
   return (
@@ -98,7 +207,9 @@ const CourseChatbot = forwardRef<HTMLDivElement, CourseChatbotProps>(({ isOpen, 
               </div>
               <div>
                 <h3 className="font-medium text-foreground text-sm">Learning Assistant</h3>
-                <p className="text-xs text-muted-foreground">Context: {context.lesson || context.course}</p>
+                <p className="text-xs text-muted-foreground truncate max-w-[200px]">
+                  {context.lesson || context.course}
+                </p>
               </div>
             </div>
             <button
@@ -118,28 +229,32 @@ const CourseChatbot = forwardRef<HTMLDivElement, CourseChatbotProps>(({ isOpen, 
                 animate={{ opacity: 1, y: 0 }}
                 className={`flex gap-3 ${message.role === "user" ? "flex-row-reverse" : ""}`}
               >
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                  message.role === "user" ? "bg-primary" : "bg-accent"
-                }`}>
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                    message.role === "user" ? "bg-primary" : "bg-accent"
+                  }`}
+                >
                   {message.role === "user" ? (
                     <User className="w-4 h-4 text-primary-foreground" />
                   ) : (
                     <Bot className="w-4 h-4 text-accent-foreground" />
                   )}
                 </div>
-                <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                  message.role === "user" 
-                    ? "bg-primary text-primary-foreground" 
-                    : "bg-muted text-foreground"
-                }`}>
+                <div
+                  className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                    message.role === "user"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-foreground"
+                  }`}
+                >
                   <p className="text-sm whitespace-pre-wrap leading-relaxed">
-                    {message.content}
+                    {message.content || (isLoading && message.role === "assistant" ? "..." : "")}
                   </p>
                 </div>
               </motion.div>
             ))}
-            
-            {isLoading && (
+
+            {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -153,7 +268,7 @@ const CourseChatbot = forwardRef<HTMLDivElement, CourseChatbotProps>(({ isOpen, 
                 </div>
               </motion.div>
             )}
-            
+
             <div ref={messagesEndRef} />
           </div>
 
@@ -167,9 +282,9 @@ const CourseChatbot = forwardRef<HTMLDivElement, CourseChatbotProps>(({ isOpen, 
                 className="flex-1"
                 disabled={isLoading}
               />
-              <Button 
-                type="submit" 
-                variant="primary" 
+              <Button
+                type="submit"
+                variant="default"
                 size="icon"
                 disabled={!input.trim() || isLoading}
               >
