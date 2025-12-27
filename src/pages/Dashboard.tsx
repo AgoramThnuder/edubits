@@ -6,6 +6,7 @@ import CreateCourseModal from "@/components/dashboard/CreateCourseModal";
 import ActivityChart from "@/components/dashboard/ActivityChart";
 import ProgressStats from "@/components/dashboard/ProgressStats";
 import FeaturedCourse from "@/components/dashboard/FeaturedCourse";
+import ContinueLearning from "@/components/dashboard/ContinueLearning";
 import TopicsList from "@/components/dashboard/TopicsList";
 import ScheduleSection from "@/components/dashboard/ScheduleSection";
 import SearchModal from "@/components/dashboard/SearchModal";
@@ -109,11 +110,21 @@ const Dashboard = () => {
             <ProgressStats />
           </motion.div>
 
-          {/* Featured Course */}
+          {/* Continue Learning */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
+            className="col-span-12 md:col-span-6 lg:col-span-4"
+          >
+            <ContinueLearning />
+          </motion.div>
+
+          {/* Featured Course / Create New */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
             className="col-span-12 md:col-span-6 lg:col-span-4"
           >
             <FeaturedCourse onCreateNew={() => setIsCreateModalOpen(true)} />
