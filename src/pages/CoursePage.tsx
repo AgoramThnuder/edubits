@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   BookOpen,
@@ -19,6 +19,7 @@ import AssignmentContent from "@/components/course/AssignmentContent";
 import CourseChatbot from "@/components/course/CourseChatbot";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCourseWithModules } from "@/hooks/useCourseData";
+import { useLessonProgress } from "@/hooks/useLessonProgress";
 
 const CoursePage = () => {
   const { courseId } = useParams();
@@ -26,28 +27,49 @@ const CoursePage = () => {
   const { user, loading: authLoading } = useAuth();
   
   const { data: course, isLoading: courseLoading, error } = useCourseWithModules(courseId);
+  const { 
+    completedLessonIds, 
+    lastLessonId, 
+    markLessonComplete, 
+    updateLastLesson,
+    isLoading: progressLoading 
+  } = useLessonProgress(courseId);
   
   const [expandedModules, setExpandedModules] = useState<string[]>([]);
   const [activeLesson, setActiveLesson] = useState<string | null>(null);
   const [activeAssignmentModuleId, setActiveAssignmentModuleId] = useState<string | null>(null);
-  const [completedLessonIds, setCompletedLessonIds] = useState<Set<string>>(() => new Set());
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const initializedRef = useRef(false);
 
-  // Initialize state when course loads
+  // Initialize state when course and progress loads
   useEffect(() => {
-    if (course && course.modules.length > 0) {
+    if (course && course.modules.length > 0 && !progressLoading && !initializedRef.current) {
+      initializedRef.current = true;
+      
       // Expand first two modules
       const initialExpanded = course.modules.slice(0, 2).map(m => m.id);
-      setExpandedModules(initialExpanded);
       
-      // Set first lesson as active
-      const firstLesson = course.modules[0]?.lessons[0];
-      if (firstLesson && !activeLesson) {
-        setActiveLesson(firstLesson.id);
+      // If user has a last lesson, expand that module too
+      if (lastLessonId) {
+        const moduleWithLastLesson = course.modules.find(m => 
+          m.lessons.some(l => l.id === lastLessonId)
+        );
+        if (moduleWithLastLesson && !initialExpanded.includes(moduleWithLastLesson.id)) {
+          initialExpanded.push(moduleWithLastLesson.id);
+        }
+        setActiveLesson(lastLessonId);
+      } else {
+        // Set first lesson as active
+        const firstLesson = course.modules[0]?.lessons[0];
+        if (firstLesson) {
+          setActiveLesson(firstLesson.id);
+        }
       }
+      
+      setExpandedModules(initialExpanded);
     }
-  }, [course]);
+  }, [course, progressLoading, lastLessonId]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -80,16 +102,13 @@ const CoursePage = () => {
     lessonId: string,
     options?: { completeLessonId?: string }
   ) => {
-    if (options?.completeLessonId) {
-      setCompletedLessonIds((prev) => {
-        const next = new Set(prev);
-        next.add(options.completeLessonId as string);
-        return next;
-      });
+    if (options?.completeLessonId && allLessons.length > 0) {
+      markLessonComplete(options.completeLessonId, allLessons.length);
     }
 
     setActiveAssignmentModuleId(null);
     setActiveLesson(lessonId);
+    updateLastLesson(lessonId);
 
     const module = course?.modules.find((m) =>
       m.lessons.some((l) => l.id === lessonId)
@@ -100,12 +119,8 @@ const CoursePage = () => {
   };
 
   const openAssignment = (moduleId: string, options?: { completeLessonId?: string }) => {
-    if (options?.completeLessonId) {
-      setCompletedLessonIds((prev) => {
-        const next = new Set(prev);
-        next.add(options.completeLessonId as string);
-        return next;
-      });
+    if (options?.completeLessonId && allLessons.length > 0) {
+      markLessonComplete(options.completeLessonId, allLessons.length);
     }
     setActiveAssignmentModuleId(moduleId);
     if (!expandedModules.includes(moduleId)) {
@@ -131,14 +146,10 @@ const CoursePage = () => {
   };
 
   const handleFinishCourse = () => {
-    if (!course) return;
+    if (!course || allLessons.length === 0) return;
     const lastModule = course.modules[course.modules.length - 1];
     const lastLesson = lastModule.lessons[lastModule.lessons.length - 1];
-    setCompletedLessonIds((prev) => {
-      const next = new Set(prev);
-      next.add(lastLesson.id);
-      return next;
-    });
+    markLessonComplete(lastLesson.id, allLessons.length);
   };
 
   const isLessonCompleted = (lessonId: string) => completedLessonIds.has(lessonId);
@@ -162,7 +173,7 @@ const CoursePage = () => {
     return currentLesson?.id === lastLesson?.id;
   }, [course, currentLesson]);
 
-  if (authLoading || courseLoading) {
+  if (authLoading || courseLoading || progressLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
