@@ -6,14 +6,14 @@ const ProgressStats = () => {
   const { data: courses = [] } = useCourses();
 
   const totalCourses = courses.length;
-  const attendedCourses = enrollments.length;
-  const nonAttendedCourses = Math.max(0, totalCourses - attendedCourses);
-  const attendanceRate = totalCourses > 0 ? Math.round((attendedCourses / totalCourses) * 100) : 0;
+  const startedCourses = enrollments.filter(e => (e.progress ?? 0) >= 1).length;
+  const notStartedCourses = Math.max(0, totalCourses - startedCourses);
+  const attendanceRate = totalCourses > 0 ? Math.round((startedCourses / totalCourses) * 100) : 0;
 
   const stats = [
     { icon: BookOpen, label: "Total Courses", value: totalCourses, color: "text-primary bg-primary/10" },
-    { icon: CheckCircle, label: "Enrolled", value: attendedCourses, color: "text-success bg-success/10" },
-    { icon: XCircle, label: "Not Enrolled", value: nonAttendedCourses, color: "text-destructive bg-destructive/10" },
+    { icon: CheckCircle, label: "Started", value: startedCourses, color: "text-success bg-success/10" },
+    { icon: XCircle, label: "Not Started", value: notStartedCourses, color: "text-destructive bg-destructive/10" },
   ];
 
   return (
@@ -36,11 +36,11 @@ const ProgressStats = () => {
       <div className="flex justify-between text-xs text-muted-foreground mb-6">
         <span className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-full bg-success" />
-          Enrolled ({attendedCourses})
+          Started ({startedCourses})
         </span>
         <span className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-full bg-secondary" />
-          Not Enrolled ({nonAttendedCourses})
+          Not Started ({notStartedCourses})
         </span>
       </div>
 
