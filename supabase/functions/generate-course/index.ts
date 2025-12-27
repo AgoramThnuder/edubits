@@ -38,23 +38,23 @@ serve(async (req) => {
 
     console.log('Generating course for topic:', topic, 'difficulty:', difficulty);
 
-    const systemPrompt = `You are an expert educational content creator and instructional designer. Your task is to create comprehensive, engaging courses that rival professional online learning platforms.
+    const systemPrompt = `You are an expert educational content creator. Your task is to create a course ONLY about the specific topic provided by the user.
 
 CRITICAL: The course MUST be about the EXACT topic specified. Do NOT generate content about any other subject.
 
 You MUST respond with ONLY valid JSON (no markdown, no code blocks, no extra text). Use this exact structure:
 {
   "title": "Course title - must include the topic name",
-  "description": "Compelling course description that highlights what learners will achieve (3-4 sentences)",
+  "description": "Brief course description about the specific topic (2-3 sentences)",
   "duration_hours": number,
   "total_lessons": number,
   "modules": [
     {
-      "title": "Module title - descriptive and engaging",
+      "title": "Module title - related to the topic",
       "lessons": [
         {
-          "title": "Lesson title - clear and action-oriented",
-          "content": "Comprehensive lesson content (see detailed requirements below)",
+          "title": "Lesson title - specific to the topic",
+          "content": "Detailed lesson content about the topic. Use plain text only.",
           "duration_minutes": number
         }
       ]
@@ -62,64 +62,13 @@ You MUST respond with ONLY valid JSON (no markdown, no code blocks, no extra tex
   ]
 }
 
-LESSON CONTENT REQUIREMENTS (VERY IMPORTANT):
-Each lesson content MUST include ALL of the following sections, written in plain text with clear section headers:
-
-1. INTRODUCTION (2-3 sentences)
-   - Hook the learner with why this topic matters
-   - State the learning objective clearly
-
-2. CORE CONCEPTS (400-600 words)
-   - Explain the main ideas thoroughly
-   - Break down complex concepts into digestible parts
-   - Use analogies and real-world connections
-   - Define key terminology
-
-3. PRACTICAL EXAMPLES (200-300 words)
-   - Provide 2-3 concrete, real-world examples
-   - Show how the concept applies in different scenarios
-   - Include step-by-step walkthroughs where applicable
-
-4. VISUAL DESCRIPTION (100-150 words)
-   - Describe a diagram, chart, or infographic that would illustrate the concept
-   - Write it as: "Imagine a diagram showing..." or "Picture a flowchart that..."
-   - This helps learners visualize the concept
-
-5. KEY TAKEAWAYS (3-5 bullet points as plain text)
-   - Summarize the most important points
-   - Format as: "Key Takeaway 1: ...", "Key Takeaway 2: ..."
-
-6. PRACTICE EXERCISE (100-150 words)
-   - Include a hands-on activity or reflection question
-   - Make it actionable and relevant
-
-7. PRO TIP (1-2 sentences)
-   - Share an expert insight or common mistake to avoid
-
-Total lesson content should be 800-1200 words per lesson.
-
-DIFFICULTY GUIDELINES:
-- BEGINNER: 3-4 modules, 3 lessons each
-  - Use simple language and lots of analogies
-  - More examples, slower pace
-  - Focus on foundational concepts
-
-- INTERMEDIATE: 4-5 modules, 3-4 lessons each
-  - Assume basic knowledge
-  - Include more nuanced concepts
-  - Add challenging practice exercises
-
-- ADVANCED: 5-6 modules, 4-5 lessons each
-  - Use technical terminology
-  - Cover edge cases and advanced techniques
-  - Include complex, multi-step examples
-
-FORMATTING RULES:
-- Use plain text only, NO markdown syntax
-- Use section headers like "INTRODUCTION:", "CORE CONCEPTS:", etc.
-- For lists, use "1.", "2.", "3." or "- " prefix
-- Keep paragraphs well-organized with clear spacing
-- ALL content must be specifically about the requested topic`;
+Guidelines:
+- For beginner: 3 modules, 2-3 lessons each, simple explanations
+- For intermediate: 4 modules, 3-4 lessons each, more depth
+- For advanced: 5 modules, 4-5 lessons each, complex topics
+- Each lesson content should be 150-300 words of plain text
+- ALL content must be specifically about the requested topic
+- DO NOT use markdown, code blocks, or special characters in content`;
 
     const userPrompt = `Create a ${difficulty} level mini-course SPECIFICALLY about: "${topic}". 
 
@@ -213,9 +162,6 @@ Respond with ONLY valid JSON.`;
       }
     }
 
-    // Calculate total lessons
-    const totalLessons = courseData.modules?.reduce((acc: number, m: any) => acc + (m.lessons?.length || 0), 0) || 0;
-
     // Insert course into database
     const { data: course, error: courseError } = await supabaseClient
       .from('courses')
@@ -223,7 +169,7 @@ Respond with ONLY valid JSON.`;
         title: courseData.title,
         description: courseData.description,
         duration_hours: courseData.duration_hours || 1,
-        total_lessons: totalLessons,
+        total_lessons: courseData.total_lessons || courseData.modules?.reduce((acc: number, m: any) => acc + (m.lessons?.length || 0), 0) || 5,
         category_id: categoryId,
         created_by: user.id,
         image_url: `https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=300&fit=crop`
@@ -236,49 +182,6 @@ Respond with ONLY valid JSON.`;
       throw new Error('Failed to save course');
     }
 
-    console.log('Course created:', course.id);
-
-    // Insert modules and lessons
-    for (let moduleIndex = 0; moduleIndex < courseData.modules.length; moduleIndex++) {
-      const moduleData = courseData.modules[moduleIndex];
-      
-      const { data: module, error: moduleError } = await supabaseClient
-        .from('modules')
-        .insert({
-          course_id: course.id,
-          title: moduleData.title,
-          order_index: moduleIndex
-        })
-        .select()
-        .single();
-
-      if (moduleError) {
-        console.error('Failed to save module:', moduleError);
-        continue;
-      }
-
-      console.log('Module created:', module.id);
-
-      // Insert lessons for this module
-      for (let lessonIndex = 0; lessonIndex < moduleData.lessons.length; lessonIndex++) {
-        const lessonData = moduleData.lessons[lessonIndex];
-        
-        const { error: lessonError } = await supabaseClient
-          .from('lessons')
-          .insert({
-            module_id: module.id,
-            title: lessonData.title,
-            content: lessonData.content,
-            duration_minutes: lessonData.duration_minutes || 5,
-            order_index: lessonIndex
-          });
-
-        if (lessonError) {
-          console.error('Failed to save lesson:', lessonError);
-        }
-      }
-    }
-
     // Auto-enroll user in the course
     await supabaseClient
       .from('user_enrollments')
@@ -289,7 +192,7 @@ Respond with ONLY valid JSON.`;
         completed_lessons: 0
       });
 
-    console.log('Course created successfully with modules and lessons:', course.id);
+    console.log('Course created successfully:', course.id);
 
     return new Response(JSON.stringify({ 
       success: true, 

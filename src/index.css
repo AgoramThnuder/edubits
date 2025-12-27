@@ -49,10 +49,10 @@
     --chart-secondary: 262 83% 85%;
     --chart-highlight: 262 83% 58%;
 
-    /* Lesson content background */
-    --notebook-paper: 220 20% 98%;
-    --notebook-paper-gradient-start: 220 25% 97%;
-    --notebook-paper-gradient-end: 230 20% 95%;
+    /* Notebook-specific */
+    --notebook-line: 224 20% 90%;
+    --notebook-margin: 0 60% 65%;
+    --notebook-paper: 0 0% 100%;
 
     /* Sidebar */
     --sidebar-background: 0 0% 100%;
@@ -112,10 +112,9 @@
     --chart-secondary: 262 60% 40%;
     --chart-highlight: 262 83% 65%;
 
-    /* Lesson content background - dark mode */
-    --notebook-paper: 224 25% 10%;
-    --notebook-paper-gradient-start: 224 28% 11%;
-    --notebook-paper-gradient-end: 224 22% 8%;
+    --notebook-line: 224 20% 20%;
+    --notebook-margin: 0 50% 45%;
+    --notebook-paper: 224 25% 12%;
 
     --sidebar-background: 224 30% 6%;
     --sidebar-foreground: 228 15% 90%;
@@ -146,14 +145,15 @@
     @apply font-body font-semibold tracking-tight;
   }
 
-  /* Clean lesson content background */
+  /* Notebook ruled lines background */
   .notebook-paper {
-    background: linear-gradient(
-      180deg, 
-      hsl(var(--notebook-paper-gradient-start)) 0%, 
-      hsl(var(--notebook-paper)) 50%,
-      hsl(var(--notebook-paper-gradient-end)) 100%
-    );
+    background-color: hsl(var(--notebook-paper));
+    background-image: 
+      linear-gradient(hsl(var(--notebook-line)) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--notebook-margin)) 1px, transparent 1px);
+    background-size: 100% 2rem, 100% 100%;
+    background-position: 0 0, 3rem 0;
+    line-height: 2rem;
   }
 
   /* Gentle focus states */
