@@ -2,3 +2,6 @@ project_id = "vhevxymivxoulzglfmtw"
 
 [functions.generate-course]
 verify_jwt = false
+
+[functions.course-chat]
+verify_jwt = false

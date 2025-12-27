@@ -145,15 +145,9 @@
     @apply font-body font-semibold tracking-tight;
   }
 
-  /* Notebook ruled lines background */
+  /* Notebook ruled lines background - subtle and readable */
   .notebook-paper {
-    background-color: hsl(var(--notebook-paper));
-    background-image: 
-      linear-gradient(hsl(var(--notebook-line)) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(var(--notebook-margin)) 1px, transparent 1px);
-    background-size: 100% 2rem, 100% 100%;
-    background-position: 0 0, 3rem 0;
-    line-height: 2rem;
+    background-color: hsl(var(--card));
   }
 
   /* Gentle focus states */
@@ -195,13 +189,7 @@
 
   /* Notebook block styling */
   .notebook-block {
-    @apply relative pl-12 pr-6 py-4;
-  }
-
-  .notebook-block::before {
-    content: "";
-    @apply absolute left-8 top-0 bottom-0 w-px;
-    background-color: hsl(var(--notebook-margin));
+    @apply relative px-6 py-4;
   }
 
   /* Subtle text highlight */
