@@ -156,36 +156,9 @@ const CoursesPage = () => {
 
       {/* Main Content */}
       <main className="max-w-[1600px] mx-auto px-6 py-8">
-        {/* Header with Create Course Card */}
-        <div className="flex flex-col lg:flex-row gap-6 mb-8">
-          <div className="flex-1">
-            <h1 className="text-3xl font-semibold text-foreground mb-2">Courses</h1>
-            <p className="text-muted-foreground">Continue learning or explore new topics</p>
-          </div>
-          
-          {/* Create Course Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="lg:w-80"
-          >
-            <div className="dashboard-card h-full bg-card flex flex-col items-center justify-center text-center py-6">
-              <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center mb-3">
-                <Sparkles className="w-6 h-6 text-accent" />
-              </div>
-              <h3 className="text-base font-semibold text-foreground mb-1">
-                Create New Course
-              </h3>
-              <p className="text-xs text-muted-foreground mb-4 leading-relaxed max-w-xs">
-                Generate an AI-powered course on any topic
-              </p>
-              <Button onClick={() => setIsCreateModalOpen(true)} size="sm" className="gap-2">
-                <Plus className="w-4 h-4" />
-                Create Course
-              </Button>
-            </div>
-          </motion.div>
+        <div className="mb-8">
+          <h1 className="text-3xl font-semibold text-foreground mb-2">Courses</h1>
+          <p className="text-muted-foreground">Continue learning or explore new topics</p>
         </div>
 
         {/* Search and Filter */}
@@ -248,6 +221,31 @@ const CoursesPage = () => {
         ) : (
           /* Course Grid */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Create Course Card - Always First */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <div 
+                className="dashboard-card h-full min-h-[320px] flex flex-col items-center justify-center text-center cursor-pointer hover:border-accent/50 transition-colors"
+                onClick={() => setIsCreateModalOpen(true)}
+              >
+                <div className="w-16 h-16 rounded-full bg-accent/20 flex items-center justify-center mb-4">
+                  <Sparkles className="w-8 h-8 text-accent" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  Create New Course
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4 leading-relaxed max-w-[200px]">
+                  Generate an AI-powered course on any topic
+                </p>
+                <Button size="sm" className="gap-2">
+                  <Plus className="w-4 h-4" />
+                  Create Course
+                </Button>
+              </div>
+            </motion.div>
+
             {filteredCourses.map((course, index) => {
               const isEnrolled = enrolledCourseIds.has(course.id);
               const enrollment = enrollments.find((e) => e.course_id === course.id);
@@ -257,7 +255,7 @@ const CoursesPage = () => {
                   key={course.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
+                  transition={{ delay: (index + 1) * 0.05 }}
                 >
                     <div 
                       className="dashboard-card card-lift overflow-hidden cursor-pointer group"
