@@ -82,6 +82,76 @@ export type Database = {
           },
         ]
       }
+      lessons: {
+        Row: {
+          content: string
+          created_at: string
+          duration_minutes: number | null
+          id: string
+          module_id: string
+          order_index: number
+          title: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          module_id: string
+          order_index?: number
+          title: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          module_id?: string
+          order_index?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lessons_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      modules: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          order_index: number
+          title: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          order_index?: number
+          title: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          order_index?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "modules_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
