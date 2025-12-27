@@ -38,21 +38,23 @@ serve(async (req) => {
 
     console.log('Generating course for topic:', topic, 'difficulty:', difficulty);
 
-    const systemPrompt = `You are an expert educational content creator. Generate a structured mini-course based on the given topic and difficulty level.
+    const systemPrompt = `You are an expert educational content creator. Your task is to create a course ONLY about the specific topic provided by the user.
+
+CRITICAL: The course MUST be about the EXACT topic specified. Do NOT generate content about any other subject.
 
 You MUST respond with ONLY valid JSON (no markdown, no code blocks, no extra text). Use this exact structure:
 {
-  "title": "Course title",
-  "description": "Brief course description (2-3 sentences)",
+  "title": "Course title - must include the topic name",
+  "description": "Brief course description about the specific topic (2-3 sentences)",
   "duration_hours": number,
   "total_lessons": number,
   "modules": [
     {
-      "title": "Module title",
+      "title": "Module title - related to the topic",
       "lessons": [
         {
-          "title": "Lesson title",
-          "content": "Detailed lesson content. Use plain text only, no code blocks or special formatting.",
+          "title": "Lesson title - specific to the topic",
+          "content": "Detailed lesson content about the topic. Use plain text only.",
           "duration_minutes": number
         }
       ]
@@ -65,10 +67,14 @@ Guidelines:
 - For intermediate: 4 modules, 3-4 lessons each, more depth
 - For advanced: 5 modules, 4-5 lessons each, complex topics
 - Each lesson content should be 150-300 words of plain text
-- DO NOT use markdown, code blocks, or special characters in content
-- Keep content as simple readable text`;
+- ALL content must be specifically about the requested topic
+- DO NOT use markdown, code blocks, or special characters in content`;
 
-    const userPrompt = `Create a ${difficulty} level mini-course about: "${topic}". Remember: respond with ONLY valid JSON, no markdown formatting.`;
+    const userPrompt = `Create a ${difficulty} level mini-course SPECIFICALLY about: "${topic}". 
+
+IMPORTANT: Every module and lesson must be about ${topic} and nothing else. The title must include "${topic}".
+
+Respond with ONLY valid JSON.`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
