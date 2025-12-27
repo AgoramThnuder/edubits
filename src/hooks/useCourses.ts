@@ -223,3 +223,34 @@ export const useCreateCourse = () => {
     },
   });
 };
+
+export const useDeleteCourse = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async (courseId: string) => {
+      if (!user) throw new Error("Not authenticated");
+
+      // First delete related enrollments
+      await supabase
+        .from("user_enrollments")
+        .delete()
+        .eq("course_id", courseId);
+
+      // Then delete the course
+      const { error } = await supabase
+        .from("courses")
+        .delete()
+        .eq("id", courseId)
+        .eq("created_by", user.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+      queryClient.invalidateQueries({ queryKey: ["enrollments"] });
+      queryClient.invalidateQueries({ queryKey: ["recent-courses"] });
+    },
+  });
+};
