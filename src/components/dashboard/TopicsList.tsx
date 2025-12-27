@@ -1,30 +1,22 @@
-import { Brain, Code, History, Calculator, TrendingUp, BookOpen } from "lucide-react";
+import { TrendingUp, BookOpen } from "lucide-react";
 import { useUserEnrollments } from "@/hooks/useCourses";
 import { useMemo } from "react";
 import { isWithinInterval, subDays } from "date-fns";
 
-const iconMap: Record<string, any> = {
-  "AI & Data Science": Brain,
-  "Programming": Code,
-  "History": History,
-  "Mathematics": Calculator,
-};
-
-const colorMap: Record<string, string> = {
-  "AI & Data Science": "bg-accent/10 text-accent",
-  "Programming": "bg-primary/10 text-primary",
-  "History": "bg-success/10 text-success",
-  "Mathematics": "bg-warning/10 text-warning",
-};
-
 const TopicsList = () => {
   const { data: enrollments = [], isLoading } = useUserEnrollments();
 
-  // Calculate study time by category for last 7 days
+  // Calculate study time by course for last 7 days
   const weeklyTopics = useMemo(() => {
     const sevenDaysAgo = subDays(new Date(), 7);
-    
-    const categoryStats: Record<string, { name: string; lessonsCompleted: number; hoursStudied: number }> = {};
+
+    const courseStats: { 
+      id: string; 
+      name: string; 
+      lessonsCompleted: number; 
+      hoursStudied: number;
+      imageUrl: string | null;
+    }[] = [];
 
     enrollments.forEach((enrollment) => {
       if (!enrollment.courses) return;
@@ -33,23 +25,17 @@ const TopicsList = () => {
       const isRecent = lastStudied && isWithinInterval(lastStudied, { start: sevenDaysAgo, end: new Date() });
       
       if (isRecent) {
-        const categoryName = enrollment.courses.categories?.name || "General";
-        
-        if (!categoryStats[categoryName]) {
-          categoryStats[categoryName] = {
-            name: categoryName,
-            lessonsCompleted: 0,
-            hoursStudied: 0,
-          };
-        }
-        
-        categoryStats[categoryName].lessonsCompleted += enrollment.completed_lessons;
-        // Estimate hours based on lessons (assume 0.5 hours per lesson)
-        categoryStats[categoryName].hoursStudied += enrollment.completed_lessons * 0.5;
+        courseStats.push({
+          id: enrollment.courses.id,
+          name: enrollment.courses.title,
+          lessonsCompleted: enrollment.completed_lessons || 0,
+          hoursStudied: (enrollment.completed_lessons || 0) * 0.5,
+          imageUrl: enrollment.courses.image_url,
+        });
       }
     });
 
-    return Object.values(categoryStats)
+    return courseStats
       .sort((a, b) => b.hoursStudied - a.hoursStudied)
       .slice(0, 4);
   }, [enrollments]);
@@ -96,37 +82,42 @@ const TopicsList = () => {
       </div>
 
       <div className="space-y-3">
-        {weeklyTopics.map((topic, index) => {
-          const Icon = iconMap[topic.name] || BookOpen;
-          const color = colorMap[topic.name] || "bg-secondary text-muted-foreground";
-          
-          return (
-            <div 
-              key={topic.name}
-              className="flex items-center gap-4 p-3 rounded-xl hover:bg-secondary/50 transition-colors cursor-pointer"
-            >
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
-                <Icon className="w-5 h-5" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-foreground truncate">{topic.name}</p>
-                <p className="text-xs text-muted-foreground">{topic.lessonsCompleted} lessons completed</p>
-              </div>
-              <div className="text-right">
-                <div className="flex items-center gap-1">
-                  <span className="text-lg font-semibold text-foreground">{topic.hoursStudied.toFixed(1)}</span>
-                  <span className="text-sm text-muted-foreground">hrs</span>
+        {weeklyTopics.map((topic, index) => (
+          <div 
+            key={topic.id}
+            className="flex items-center gap-4 p-3 rounded-xl hover:bg-secondary/50 transition-colors cursor-pointer"
+          >
+            <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 bg-secondary">
+              {topic.imageUrl ? (
+                <img 
+                  src={topic.imageUrl} 
+                  alt={topic.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <BookOpen className="w-5 h-5 text-muted-foreground" />
                 </div>
-                {index === 0 && (
-                  <div className="flex items-center gap-1 text-xs text-accent">
-                    <TrendingUp className="w-3 h-3" />
-                    <span>Top</span>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
-          );
-        })}
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-foreground truncate">{topic.name}</p>
+              <p className="text-xs text-muted-foreground">{topic.lessonsCompleted} lessons completed</p>
+            </div>
+            <div className="text-right">
+              <div className="flex items-center gap-1">
+                <span className="text-lg font-semibold text-foreground">{topic.hoursStudied.toFixed(1)}</span>
+                <span className="text-sm text-muted-foreground">hrs</span>
+              </div>
+              {index === 0 && (
+                <div className="flex items-center gap-1 text-xs text-accent">
+                  <TrendingUp className="w-3 h-3" />
+                  <span>Top</span>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
 
       <div className="mt-4 pt-4 border-t border-border">

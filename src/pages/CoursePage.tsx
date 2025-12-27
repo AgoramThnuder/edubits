@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { 
   BookOpen, 
@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import LessonContent from "@/components/course/LessonContent";
 import CourseChatbot from "@/components/course/CourseChatbot";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLogActivity } from "@/hooks/useActivity";
 
 // Mock course data
 const mockCourse = {
@@ -74,12 +75,42 @@ const CoursePage = () => {
   const [activeLesson, setActiveLesson] = useState("l4");
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  
+  const logActivity = useLogActivity();
+  const startTimeRef = useRef<number>(Date.now());
+  const lastLoggedRef = useRef<number>(0);
 
   useEffect(() => {
     if (!loading && !user) {
       navigate("/auth");
     }
   }, [user, loading, navigate]);
+
+  // Track study time when lesson changes or component unmounts
+  useEffect(() => {
+    startTimeRef.current = Date.now();
+    
+    return () => {
+      const timeSpent = (Date.now() - startTimeRef.current) / 1000 / 60 / 60; // Convert to hours
+      if (timeSpent >= 0.01 && user) { // Only log if spent at least ~30 seconds
+        logActivity.mutate(timeSpent);
+      }
+    };
+  }, [activeLesson]);
+
+  // Log activity periodically (every 5 minutes)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const timeSpent = (now - startTimeRef.current) / 1000 / 60 / 60;
+      if (timeSpent >= 0.08 && user) { // ~5 minutes
+        logActivity.mutate(timeSpent);
+        startTimeRef.current = now;
+      }
+    }, 5 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [user]);
 
   const toggleModule = (moduleId: string) => {
     setExpandedModules(prev =>
