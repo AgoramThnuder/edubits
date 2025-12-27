@@ -1,6 +1,6 @@
 import { forwardRef } from "react";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Menu } from "lucide-react";
+import { ChevronLeft, ChevronRight, Menu, ClipboardList, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface Lesson {
@@ -15,6 +15,10 @@ interface LessonContentProps {
   onToggleSidebar: () => void;
   sidebarCollapsed: boolean;
   onNavigate: (lessonId: string, options?: { completeLessonId?: string }) => void;
+  onOpenQuiz: () => void;
+  onFinishCourse: () => void;
+  isLastLessonInModule: boolean;
+  isLastLessonInCourse: boolean;
 }
 
 const LessonContent = forwardRef<HTMLDivElement, LessonContentProps>(({ 
@@ -22,7 +26,11 @@ const LessonContent = forwardRef<HTMLDivElement, LessonContentProps>(({
   allLessons, 
   onToggleSidebar, 
   sidebarCollapsed,
-  onNavigate 
+  onNavigate,
+  onOpenQuiz,
+  onFinishCourse,
+  isLastLessonInModule,
+  isLastLessonInCourse
 }, ref) => {
   if (!lesson) {
     return (
@@ -179,16 +187,39 @@ const LessonContent = forwardRef<HTMLDivElement, LessonContentProps>(({
                 <ChevronLeft className="w-4 h-4" />
                 Previous Lesson
               </Button>
-              <Button 
-                className="gap-2"
-                disabled={!nextLesson}
-                onClick={() =>
-                  nextLesson && onNavigate(nextLesson.id, { completeLessonId: lesson.id })
-                }
-              >
-                Next Lesson
-                <ChevronRight className="w-4 h-4" />
-              </Button>
+              
+              {isLastLessonInCourse ? (
+                <Button 
+                  className="gap-2"
+                  onClick={() => {
+                    onFinishCourse();
+                  }}
+                >
+                  <Trophy className="w-4 h-4" />
+                  Finish Course
+                </Button>
+              ) : isLastLessonInModule ? (
+                <Button 
+                  className="gap-2"
+                  onClick={() => {
+                    onOpenQuiz();
+                  }}
+                >
+                  <ClipboardList className="w-4 h-4" />
+                  Attend Quiz
+                </Button>
+              ) : (
+                <Button 
+                  className="gap-2"
+                  disabled={!nextLesson}
+                  onClick={() =>
+                    nextLesson && onNavigate(nextLesson.id, { completeLessonId: lesson.id })
+                  }
+                >
+                  Next Lesson
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              )}
             </div>
           </div>
         </motion.div>
