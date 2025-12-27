@@ -12,14 +12,17 @@ import {
   Home,
   MessageCircleQuestion,
   Loader2,
+  PartyPopper,
 } from "lucide-react";
 import { Link, useParams, useNavigate } from "react-router-dom";
+import confetti from "canvas-confetti";
 import LessonContent from "@/components/course/LessonContent";
 import AssignmentContent from "@/components/course/AssignmentContent";
 import CourseChatbot from "@/components/course/CourseChatbot";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCourseWithModules } from "@/hooks/useCourseData";
 import { useLessonProgress } from "@/hooks/useLessonProgress";
+import { Button } from "@/components/ui/button";
 
 const CoursePage = () => {
   const { courseId } = useParams();
@@ -32,7 +35,8 @@ const CoursePage = () => {
     lastLessonId, 
     markLessonComplete, 
     updateLastLesson,
-    isLoading: progressLoading 
+    isLoading: progressLoading,
+    progress,
   } = useLessonProgress(courseId);
   
   const [expandedModules, setExpandedModules] = useState<string[]>([]);
@@ -40,7 +44,54 @@ const CoursePage = () => {
   const [activeAssignmentModuleId, setActiveAssignmentModuleId] = useState<string | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
   const initializedRef = useRef(false);
+  const celebratedRef = useRef(false);
+
+  // Trigger confetti when course is completed
+  useEffect(() => {
+    if (progress >= 100 && !celebratedRef.current && !progressLoading) {
+      celebratedRef.current = true;
+      setShowCelebration(true);
+      
+      // Fire confetti
+      const duration = 3000;
+      const end = Date.now() + duration;
+
+      const frame = () => {
+        confetti({
+          particleCount: 3,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0, y: 0.8 },
+          colors: ['#6366f1', '#8b5cf6', '#a855f7', '#22c55e', '#eab308'],
+        });
+        confetti({
+          particleCount: 3,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1, y: 0.8 },
+          colors: ['#6366f1', '#8b5cf6', '#a855f7', '#22c55e', '#eab308'],
+        });
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      };
+
+      frame();
+      
+      // Also fire a burst in the center
+      setTimeout(() => {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#6366f1', '#8b5cf6', '#a855f7', '#22c55e', '#eab308'],
+        });
+      }, 500);
+    }
+  }, [progress, progressLoading]);
 
   // Initialize state when course and progress loads
   useEffect(() => {
@@ -360,6 +411,48 @@ const CoursePage = () => {
             lesson: currentLesson?.title,
           }}
         />
+
+        {/* Celebration overlay */}
+        {showCelebration && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center"
+            onClick={() => setShowCelebration(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", duration: 0.5 }}
+              className="bg-card border border-border rounded-2xl p-8 max-w-md mx-4 text-center shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="w-20 h-20 rounded-full bg-success/20 flex items-center justify-center mx-auto mb-6">
+                <PartyPopper className="w-10 h-10 text-success" />
+              </div>
+              <h2 className="text-2xl font-bold text-foreground mb-2">
+                Congratulations! 🎉
+              </h2>
+              <p className="text-muted-foreground mb-6">
+                You've completed <span className="font-semibold text-foreground">{course.title}</span>! 
+                You're one step closer to mastering this topic.
+              </p>
+              <div className="flex gap-3 justify-center">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowCelebration(false)}
+                >
+                  Keep Reviewing
+                </Button>
+                <Button
+                  onClick={() => navigate("/courses")}
+                >
+                  Browse More Courses
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
       </main>
     </div>
   );
