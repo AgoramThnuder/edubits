@@ -227,20 +227,20 @@ const CoursesPage = () => {
               animate={{ opacity: 1, y: 0 }}
             >
               <div 
-                className="dashboard-card h-full min-h-[320px] flex flex-col items-center justify-center text-center cursor-pointer hover:border-accent/50 transition-colors"
+                className="dashboard-card h-full min-h-[240px] flex flex-col items-center justify-center text-center cursor-pointer hover:border-accent/50 transition-colors p-4"
                 onClick={() => setIsCreateModalOpen(true)}
               >
-                <div className="w-16 h-16 rounded-full bg-accent/20 flex items-center justify-center mb-4">
-                  <Sparkles className="w-8 h-8 text-accent" />
+                <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center mb-3">
+                  <Sparkles className="w-6 h-6 text-accent" />
                 </div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">
+                <h3 className="text-base font-semibold text-foreground mb-1">
                   Create New Course
                 </h3>
-                <p className="text-sm text-muted-foreground mb-4 leading-relaxed max-w-[200px]">
+                <p className="text-xs text-muted-foreground mb-3 leading-relaxed max-w-[180px]">
                   Generate an AI-powered course on any topic
                 </p>
-                <Button size="sm" className="gap-2">
-                  <Plus className="w-4 h-4" />
+                <Button size="sm" className="gap-1.5 text-xs h-8">
+                  <Plus className="w-3.5 h-3.5" />
                   Create Course
                 </Button>
               </div>
@@ -258,18 +258,18 @@ const CoursesPage = () => {
                   transition={{ delay: (index + 1) * 0.05 }}
                 >
                     <div 
-                      className="dashboard-card card-lift overflow-hidden cursor-pointer group"
+                      className="dashboard-card card-lift overflow-hidden cursor-pointer group p-4"
                       onClick={() => navigate(`/course/${course.id}`)}
                     >
                       {/* Course Image */}
-                      <div className="relative h-40 -mx-6 -mt-6 mb-4 overflow-hidden">
+                      <div className="relative h-28 -mx-4 -mt-4 mb-3 overflow-hidden">
                         <img 
                           src={course.image_url || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=250&fit=crop"} 
                           alt={course.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
-                        <div className="absolute top-3 left-3">
-                          <span className="px-3 py-1 bg-card/90 backdrop-blur-sm rounded-full text-xs font-medium text-foreground">
+                        <div className="absolute top-2 left-2">
+                          <span className="px-2 py-0.5 bg-card/90 backdrop-blur-sm rounded-full text-[10px] font-medium text-foreground">
                             {course.categories?.name || "General"}
                           </span>
                         </div>
@@ -281,9 +281,9 @@ const CoursesPage = () => {
                                 onClick={(e) => {
                                   e.stopPropagation();
                                 }}
-                                className="absolute top-3 right-3 p-2 bg-destructive/90 backdrop-blur-sm rounded-full text-destructive-foreground hover:bg-destructive transition-colors z-10"
+                                className="absolute top-2 right-2 p-1.5 bg-destructive/90 backdrop-blur-sm rounded-full text-destructive-foreground hover:bg-destructive transition-colors z-10"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             </AlertDialogTrigger>
                             <AlertDialogContent onClick={(e) => e.stopPropagation()}>
@@ -315,38 +315,38 @@ const CoursesPage = () => {
                       </div>
 
                       {/* Course Info */}
-                      <h3 className="font-semibold text-foreground mb-2 group-hover:text-primary transition-colors line-clamp-2">
+                      <h3 className="text-sm font-semibold text-foreground mb-1 group-hover:text-primary transition-colors line-clamp-2">
                         {course.title}
                       </h3>
-                      <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                      <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
                         {course.description || "No description available"}
                       </p>
 
                       {/* Stats */}
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
+                      <div className="flex items-center gap-3 text-[10px] text-muted-foreground mb-3">
                         <span className="flex items-center gap-1">
-                          <BookOpen className="w-3.5 h-3.5" />
+                          <BookOpen className="w-3 h-3" />
                           {course.total_lessons} lessons
                         </span>
                         <span className="flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5" />
+                          <Clock className="w-3 h-3" />
                           {course.duration_hours}h
                         </span>
                       </div>
 
                       {/* Progress or Enroll */}
                       {isEnrolled && enrollment ? (
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between text-xs">
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between text-[10px]">
                             <span className="text-muted-foreground">Progress</span>
                             <span className="font-medium text-foreground">{enrollment.progress}%</span>
                           </div>
-                          <Progress value={enrollment.progress} className="h-1.5" />
+                          <Progress value={enrollment.progress} className="h-1" />
                         </div>
                       ) : (
                         <Button
                           size="sm"
-                          className="w-full"
+                          className="w-full h-7 text-xs"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleEnroll(course.id, e);
@@ -354,11 +354,11 @@ const CoursesPage = () => {
                           disabled={enrollInCourse.isPending}
                         >
                           {enrollInCourse.isPending ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <Loader2 className="w-3 h-3 animate-spin" />
                           ) : (
                             <>
                               Enroll Now
-                              <ChevronRight className="w-4 h-4 ml-1" />
+                              <ChevronRight className="w-3 h-3 ml-1" />
                             </>
                           )}
                         </Button>
