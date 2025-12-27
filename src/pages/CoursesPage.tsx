@@ -230,8 +230,10 @@ const CoursesPage = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
                 >
-                  <Link to={`/course/${course.id}`} className="block group">
-                    <div className="dashboard-card card-lift overflow-hidden">
+                    <div 
+                      className="dashboard-card card-lift overflow-hidden cursor-pointer group"
+                      onClick={() => navigate(`/course/${course.id}`)}
+                    >
                       {/* Course Image */}
                       <div className="relative h-40 -mx-6 -mt-6 mb-4 overflow-hidden">
                         <img 
@@ -249,8 +251,10 @@ const CoursesPage = () => {
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <button
-                                onClick={(e) => e.preventDefault()}
-                                className="absolute top-3 right-3 p-2 bg-destructive/90 backdrop-blur-sm rounded-full text-destructive-foreground hover:bg-destructive transition-colors"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                }}
+                                className="absolute top-3 right-3 p-2 bg-destructive/90 backdrop-blur-sm rounded-full text-destructive-foreground hover:bg-destructive transition-colors z-10"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -263,9 +267,12 @@ const CoursesPage = () => {
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancel</AlertDialogCancel>
                                 <AlertDialogAction
-                                  onClick={(e) => handleDeleteCourse(course.id, e)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteCourse(course.id, e);
+                                  }}
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
                                   {deleteCourse.isPending ? (
@@ -313,7 +320,10 @@ const CoursesPage = () => {
                         <Button
                           size="sm"
                           className="w-full"
-                          onClick={(e) => handleEnroll(course.id, e)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEnroll(course.id, e);
+                          }}
                           disabled={enrollInCourse.isPending}
                         >
                           {enrollInCourse.isPending ? (
@@ -327,7 +337,6 @@ const CoursesPage = () => {
                         </Button>
                       )}
                     </div>
-                  </Link>
                 </motion.div>
               );
             })}
