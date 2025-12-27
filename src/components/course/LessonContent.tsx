@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Menu } from "lucide-react";
+import { ChevronLeft, ChevronRight, Menu, ClipboardList, CheckCircle2, Clock, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface Lesson {
@@ -8,13 +8,29 @@ interface Lesson {
   completed: boolean;
 }
 
-interface LessonContentProps {
-  lesson: Lesson | undefined;
-  onToggleSidebar: () => void;
-  sidebarCollapsed: boolean;
+interface Assignment {
+  id: string;
+  title: string;
+  score: number | null;
 }
 
-const LessonContent = ({ lesson, onToggleSidebar, sidebarCollapsed }: LessonContentProps) => {
+interface LessonContentProps {
+  lesson: Lesson | undefined;
+  allLessons: Lesson[];
+  currentAssignment?: Assignment;
+  onToggleSidebar: () => void;
+  sidebarCollapsed: boolean;
+  onNavigate: (lessonId: string) => void;
+}
+
+const LessonContent = ({ 
+  lesson, 
+  allLessons, 
+  currentAssignment,
+  onToggleSidebar, 
+  sidebarCollapsed,
+  onNavigate 
+}: LessonContentProps) => {
   if (!lesson) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -22,6 +38,10 @@ const LessonContent = ({ lesson, onToggleSidebar, sidebarCollapsed }: LessonCont
       </div>
     );
   }
+
+  const currentIndex = allLessons.findIndex(l => l.id === lesson.id);
+  const previousLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
+  const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
 
   return (
     <div className="min-h-screen">
@@ -147,7 +167,7 @@ const LessonContent = ({ lesson, onToggleSidebar, sidebarCollapsed }: LessonCont
             </div>
 
             {/* Key Takeaway */}
-            <div className="bg-primary/5 rounded-lg p-5 border border-primary/20">
+            <div className="bg-primary/5 rounded-lg p-5 border border-primary/20 mb-10">
               <p className="text-sm font-medium text-foreground mb-2">📌 Key Takeaway</p>
               <p className="text-foreground/90 leading-relaxed">
                 Supervised learning uses labeled data to teach algorithms. The two main tasks are 
@@ -155,13 +175,79 @@ const LessonContent = ({ lesson, onToggleSidebar, sidebarCollapsed }: LessonCont
               </p>
             </div>
 
+            {/* Quiz & Assignments Section */}
+            {currentAssignment && (
+              <section className="mb-10">
+                <h2 className="text-xl font-display font-medium text-foreground mb-4 flex items-center gap-2">
+                  <ClipboardList className="w-5 h-5 text-primary" />
+                  Quiz & Assignments
+                </h2>
+                <div className="space-y-3">
+                  <div className="p-4 rounded-lg bg-card border border-border flex items-center justify-between hover:border-primary/50 transition-colors cursor-pointer">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        currentAssignment.score !== null 
+                          ? 'bg-success/10 text-success' 
+                          : 'bg-muted text-muted-foreground'
+                      }`}>
+                        {currentAssignment.score !== null ? (
+                          <CheckCircle2 className="w-5 h-5" />
+                        ) : (
+                          <FileText className="w-5 h-5" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">{currentAssignment.title}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {currentAssignment.score !== null 
+                            ? `Completed • Score: ${currentAssignment.score}%` 
+                            : '10 questions • ~15 min'}
+                        </p>
+                      </div>
+                    </div>
+                    <Button 
+                      variant={currentAssignment.score !== null ? "outline" : "default"} 
+                      size="sm"
+                    >
+                      {currentAssignment.score !== null ? 'Review' : 'Start Quiz'}
+                    </Button>
+                  </div>
+                  
+                  {/* Practice Exercise */}
+                  <div className="p-4 rounded-lg bg-card border border-border flex items-center justify-between hover:border-primary/50 transition-colors cursor-pointer">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-muted text-muted-foreground flex items-center justify-center">
+                        <Clock className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">Practice Exercise</p>
+                        <p className="text-sm text-muted-foreground">Hands-on coding challenge • ~20 min</p>
+                      </div>
+                    </div>
+                    <Button variant="outline" size="sm">
+                      Start
+                    </Button>
+                  </div>
+                </div>
+              </section>
+            )}
+
             {/* Navigation */}
-            <div className="flex items-center justify-between mt-12 pt-8 border-t border-border">
-              <Button variant="outline" className="gap-2">
+            <div className="flex items-center justify-between pt-8 border-t border-border">
+              <Button 
+                variant="outline" 
+                className="gap-2"
+                disabled={!previousLesson}
+                onClick={() => previousLesson && onNavigate(previousLesson.id)}
+              >
                 <ChevronLeft className="w-4 h-4" />
                 Previous Lesson
               </Button>
-              <Button className="gap-2">
+              <Button 
+                className="gap-2"
+                disabled={!nextLesson}
+                onClick={() => nextLesson && onNavigate(nextLesson.id)}
+              >
                 Next Lesson
                 <ChevronRight className="w-4 h-4" />
               </Button>

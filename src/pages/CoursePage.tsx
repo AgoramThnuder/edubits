@@ -89,9 +89,26 @@ const CoursePage = () => {
     );
   };
 
-  const currentLesson = mockCourse.modules
-    .flatMap(m => m.lessons)
-    .find(l => l.id === activeLesson);
+  const allLessons = mockCourse.modules.flatMap(m => m.lessons);
+  
+  const currentLesson = allLessons.find(l => l.id === activeLesson);
+  
+  // Find the current module's assignment
+  const currentModule = mockCourse.modules.find(m => 
+    m.lessons.some(l => l.id === activeLesson)
+  );
+  const currentAssignment = currentModule?.assignment;
+
+  const handleNavigate = (lessonId: string) => {
+    setActiveLesson(lessonId);
+    // Ensure the module containing the lesson is expanded
+    const module = mockCourse.modules.find(m => 
+      m.lessons.some(l => l.id === lessonId)
+    );
+    if (module && !expandedModules.includes(module.id)) {
+      setExpandedModules(prev => [...prev, module.id]);
+    }
+  };
 
   if (loading) {
     return (
@@ -197,8 +214,11 @@ const CoursePage = () => {
         {/* Lesson content */}
         <LessonContent 
           lesson={currentLesson}
+          allLessons={allLessons}
+          currentAssignment={currentAssignment}
           onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
           sidebarCollapsed={sidebarCollapsed}
+          onNavigate={handleNavigate}
         />
 
         {/* Floating chat button */}
