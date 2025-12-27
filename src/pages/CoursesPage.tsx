@@ -1,15 +1,26 @@
 import { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
-import { BookOpen, Clock, Users, ChevronRight, Search, X, Loader2 } from "lucide-react";
+import { BookOpen, Clock, Users, ChevronRight, Search, X, Loader2, Trash2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
-import { useCourses, useUserEnrollments, useEnrollInCourse, useCategories } from "@/hooks/useCourses";
+import { useCourses, useUserEnrollments, useEnrollInCourse, useCategories, useDeleteCourse } from "@/hooks/useCourses";
 import NotificationsDropdown from "@/components/dashboard/NotificationsDropdown";
 import AccountDropdown from "@/components/dashboard/AccountDropdown";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const navItems = [
   { label: "Dashboard", href: "/", active: false },
@@ -27,6 +38,7 @@ const CoursesPage = () => {
   const { data: enrollments = [] } = useUserEnrollments();
   const { data: categories = [] } = useCategories();
   const enrollInCourse = useEnrollInCourse();
+  const deleteCourse = useDeleteCourse();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -37,6 +49,25 @@ const CoursesPage = () => {
   const enrolledCourseIds = useMemo(() => {
     return new Set(enrollments.map((e) => e.course_id));
   }, [enrollments]);
+
+  const handleDeleteCourse = async (courseId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    try {
+      await deleteCourse.mutateAsync(courseId);
+      toast({
+        title: "Course deleted",
+        description: "The course has been successfully deleted.",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Delete failed",
+        description: error.message || "Could not delete the course.",
+      });
+    }
+  };
 
   const categoryNames = useMemo(() => {
     return ["All", ...categories.map((c) => c.name)];
@@ -213,6 +244,40 @@ const CoursesPage = () => {
                             {course.categories?.name || "General"}
                           </span>
                         </div>
+                        {/* Delete button - only show for course creator */}
+                        {course.created_by === user?.id && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <button
+                                onClick={(e) => e.preventDefault()}
+                                className="absolute top-3 right-3 p-2 bg-destructive/90 backdrop-blur-sm rounded-full text-destructive-foreground hover:bg-destructive transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Course</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete "{course.title}"? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={(e) => handleDeleteCourse(course.id, e)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  {deleteCourse.isPending ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    "Delete"
+                                  )}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
                       </div>
 
                       {/* Course Info */}
