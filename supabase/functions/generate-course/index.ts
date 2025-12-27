@@ -54,7 +54,7 @@ You MUST respond with ONLY valid JSON (no markdown, no code blocks, no extra tex
       "lessons": [
         {
           "title": "Lesson title - specific to the topic",
-          "content": "Detailed lesson content about the topic. Use plain text only.",
+          "content": "Detailed lesson content about the topic. Make it educational and engaging. Include key concepts, explanations, and examples. Write at least 200-400 words.",
           "duration_minutes": number
         }
       ]
@@ -66,9 +66,10 @@ Guidelines:
 - For beginner: 3 modules, 2-3 lessons each, simple explanations
 - For intermediate: 4 modules, 3-4 lessons each, more depth
 - For advanced: 5 modules, 4-5 lessons each, complex topics
-- Each lesson content should be 150-300 words of plain text
+- Each lesson content should be 200-400 words of educational text
 - ALL content must be specifically about the requested topic
-- DO NOT use markdown, code blocks, or special characters in content`;
+- DO NOT use markdown, code blocks, or special characters in content
+- Make each lesson informative and self-contained`;
 
     const userPrompt = `Create a ${difficulty} level mini-course SPECIFICALLY about: "${topic}". 
 
@@ -162,6 +163,9 @@ Respond with ONLY valid JSON.`;
       }
     }
 
+    // Calculate total lessons
+    const totalLessons = courseData.modules?.reduce((acc: number, m: any) => acc + (m.lessons?.length || 0), 0) || 0;
+
     // Insert course into database
     const { data: course, error: courseError } = await supabaseClient
       .from('courses')
@@ -169,7 +173,7 @@ Respond with ONLY valid JSON.`;
         title: courseData.title,
         description: courseData.description,
         duration_hours: courseData.duration_hours || 1,
-        total_lessons: courseData.total_lessons || courseData.modules?.reduce((acc: number, m: any) => acc + (m.lessons?.length || 0), 0) || 5,
+        total_lessons: totalLessons,
         category_id: categoryId,
         created_by: user.id,
         image_url: `https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=300&fit=crop`
@@ -182,6 +186,49 @@ Respond with ONLY valid JSON.`;
       throw new Error('Failed to save course');
     }
 
+    console.log('Course created:', course.id);
+
+    // Insert modules and lessons
+    for (let moduleIndex = 0; moduleIndex < courseData.modules.length; moduleIndex++) {
+      const moduleData = courseData.modules[moduleIndex];
+      
+      const { data: module, error: moduleError } = await supabaseClient
+        .from('modules')
+        .insert({
+          course_id: course.id,
+          title: moduleData.title,
+          order_index: moduleIndex
+        })
+        .select()
+        .single();
+
+      if (moduleError) {
+        console.error('Failed to save module:', moduleError);
+        continue;
+      }
+
+      console.log('Module created:', module.id);
+
+      // Insert lessons for this module
+      for (let lessonIndex = 0; lessonIndex < moduleData.lessons.length; lessonIndex++) {
+        const lessonData = moduleData.lessons[lessonIndex];
+        
+        const { error: lessonError } = await supabaseClient
+          .from('lessons')
+          .insert({
+            module_id: module.id,
+            title: lessonData.title,
+            content: lessonData.content,
+            duration_minutes: lessonData.duration_minutes || 5,
+            order_index: lessonIndex
+          });
+
+        if (lessonError) {
+          console.error('Failed to save lesson:', lessonError);
+        }
+      }
+    }
+
     // Auto-enroll user in the course
     await supabaseClient
       .from('user_enrollments')
@@ -192,7 +239,7 @@ Respond with ONLY valid JSON.`;
         completed_lessons: 0
       });
 
-    console.log('Course created successfully:', course.id);
+    console.log('Course created successfully with modules and lessons:', course.id);
 
     return new Response(JSON.stringify({ 
       success: true, 

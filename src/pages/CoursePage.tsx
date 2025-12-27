@@ -18,70 +18,42 @@ import LessonContent from "@/components/course/LessonContent";
 import AssignmentContent from "@/components/course/AssignmentContent";
 import CourseChatbot from "@/components/course/CourseChatbot";
 import { useAuth } from "@/contexts/AuthContext";
-
-// Mock course data
-const mockCourse = {
-  id: "1",
-  title: "Introduction to Machine Learning",
-  overview: "This course provides a comprehensive introduction to machine learning, covering fundamental concepts, algorithms, and practical applications.",
-  outcomes: [
-    "Understand the difference between supervised and unsupervised learning",
-    "Implement basic ML algorithms from scratch",
-    "Evaluate model performance using appropriate metrics",
-    "Apply ML techniques to real-world problems",
-  ],
-  modules: [
-    {
-      id: "m1",
-      title: "Foundations of Machine Learning",
-      completed: true,
-      lessons: [
-        { id: "l1", title: "What is Machine Learning?", completed: true },
-        { id: "l2", title: "Types of Machine Learning", completed: true },
-        { id: "l3", title: "The ML Workflow", completed: false },
-      ],
-      assignment: { id: "a1", title: "Module 1 Quiz", score: 85 },
-    },
-    {
-      id: "m2",
-      title: "Supervised Learning",
-      completed: false,
-      lessons: [
-        { id: "l4", title: "What is Supervised Learning?", completed: false },
-        { id: "l5", title: "Linear Regression", completed: false },
-        { id: "l6", title: "Classification Basics", completed: false },
-      ],
-      assignment: { id: "a2", title: "Module 2 Quiz", score: null },
-    },
-    {
-      id: "m3",
-      title: "Unsupervised Learning",
-      completed: false,
-      lessons: [
-        { id: "l7", title: "Clustering Algorithms", completed: false },
-        { id: "l8", title: "Dimensionality Reduction", completed: false },
-      ],
-      assignment: { id: "a3", title: "Module 3 Quiz", score: null },
-    },
-  ],
-};
+import { useCourseWithModules } from "@/hooks/useCourseData";
 
 const CoursePage = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
-  const [expandedModules, setExpandedModules] = useState<string[]>(["m1", "m2"]);
-  const [activeLesson, setActiveLesson] = useState("l4");
+  const { user, loading: authLoading } = useAuth();
+  
+  const { data: course, isLoading: courseLoading, error } = useCourseWithModules(courseId);
+  
+  const [expandedModules, setExpandedModules] = useState<string[]>([]);
+  const [activeLesson, setActiveLesson] = useState<string | null>(null);
   const [activeAssignmentModuleId, setActiveAssignmentModuleId] = useState<string | null>(null);
   const [completedLessonIds, setCompletedLessonIds] = useState<Set<string>>(() => new Set());
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
+  // Initialize state when course loads
   useEffect(() => {
-    if (!loading && !user) {
+    if (course && course.modules.length > 0) {
+      // Expand first two modules
+      const initialExpanded = course.modules.slice(0, 2).map(m => m.id);
+      setExpandedModules(initialExpanded);
+      
+      // Set first lesson as active
+      const firstLesson = course.modules[0]?.lessons[0];
+      if (firstLesson && !activeLesson) {
+        setActiveLesson(firstLesson.id);
+      }
+    }
+  }, [course]);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
       navigate("/auth");
     }
-  }, [user, loading, navigate]);
+  }, [user, authLoading, navigate]);
 
   const toggleModule = (moduleId: string) => {
     setExpandedModules((prev) =>
@@ -89,16 +61,19 @@ const CoursePage = () => {
     );
   };
 
-  const allLessons = useMemo(() => mockCourse.modules.flatMap((m) => m.lessons), []);
+  const allLessons = useMemo(() => 
+    course?.modules.flatMap((m) => m.lessons) || [], 
+    [course]
+  );
 
   const currentLesson = allLessons.find((l) => l.id === activeLesson);
 
-  const currentModule = mockCourse.modules.find((m) =>
+  const currentModule = course?.modules.find((m) =>
     m.lessons.some((l) => l.id === activeLesson)
   );
 
   const activeAssignment = activeAssignmentModuleId
-    ? mockCourse.modules.find((m) => m.id === activeAssignmentModuleId)?.assignment
+    ? { id: activeAssignmentModuleId, title: `${course?.modules.find(m => m.id === activeAssignmentModuleId)?.title} Quiz`, score: null }
     : null;
 
   const handleNavigate = (
@@ -116,7 +91,7 @@ const CoursePage = () => {
     setActiveAssignmentModuleId(null);
     setActiveLesson(lessonId);
 
-    const module = mockCourse.modules.find((m) =>
+    const module = course?.modules.find((m) =>
       m.lessons.some((l) => l.id === lessonId)
     );
     if (module) {
@@ -133,18 +108,16 @@ const CoursePage = () => {
       });
     }
     setActiveAssignmentModuleId(moduleId);
-    // keep sidebar in sync
     if (!expandedModules.includes(moduleId)) {
       setExpandedModules((prev) => [...prev, moduleId]);
     }
   };
 
   const handleQuizComplete = () => {
-    // Find current module and navigate to first lesson of next module
-    if (!activeAssignmentModuleId) return;
+    if (!activeAssignmentModuleId || !course) return;
     
-    const currentModuleIndex = mockCourse.modules.findIndex(m => m.id === activeAssignmentModuleId);
-    const nextModule = mockCourse.modules[currentModuleIndex + 1];
+    const currentModuleIndex = course.modules.findIndex(m => m.id === activeAssignmentModuleId);
+    const nextModule = course.modules[currentModuleIndex + 1];
     
     if (nextModule && nextModule.lessons.length > 0) {
       setActiveAssignmentModuleId(null);
@@ -153,55 +126,85 @@ const CoursePage = () => {
         setExpandedModules((prev) => [...prev, nextModule.id]);
       }
     } else {
-      // Last module quiz completed
       setActiveAssignmentModuleId(null);
     }
   };
 
   const handleFinishCourse = () => {
-    // Mark last lesson as completed
-    const lastModule = mockCourse.modules[mockCourse.modules.length - 1];
+    if (!course) return;
+    const lastModule = course.modules[course.modules.length - 1];
     const lastLesson = lastModule.lessons[lastModule.lessons.length - 1];
     setCompletedLessonIds((prev) => {
       const next = new Set(prev);
       next.add(lastLesson.id);
       return next;
     });
-    // Could navigate to a completion page or show a toast
   };
 
   const isLessonCompleted = (lessonId: string) => completedLessonIds.has(lessonId);
 
   const isModuleCompleted = (moduleId: string) => {
-    const module = mockCourse.modules.find((m) => m.id === moduleId);
+    const module = course?.modules.find((m) => m.id === moduleId);
     if (!module) return false;
     return module.lessons.every((l) => isLessonCompleted(l.id));
   };
 
-  // Check if current lesson is the last in its module
   const isLastLessonInCurrentModule = useMemo(() => {
     if (!currentModule || !currentLesson) return false;
     const lastLesson = currentModule.lessons[currentModule.lessons.length - 1];
     return lastLesson.id === currentLesson.id;
   }, [currentModule, currentLesson]);
 
-  // Check if current lesson is the last lesson of the last module
   const isLastLessonInCourse = useMemo(() => {
-    const lastModule = mockCourse.modules[mockCourse.modules.length - 1];
+    if (!course || course.modules.length === 0) return false;
+    const lastModule = course.modules[course.modules.length - 1];
     const lastLesson = lastModule.lessons[lastModule.lessons.length - 1];
-    return currentLesson?.id === lastLesson.id;
-  }, [currentLesson]);
+    return currentLesson?.id === lastLesson?.id;
+  }, [course, currentLesson]);
 
-  if (loading) {
+  if (authLoading || courseLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading course...</p>
+        </div>
       </div>
     );
   }
 
   if (!user) {
     return null;
+  }
+
+  if (error || !course) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-foreground mb-2">Course not found</h2>
+          <p className="text-muted-foreground mb-4">This course may have been deleted or doesn't exist.</p>
+          <Link to="/courses" className="text-primary hover:underline">
+            Back to Courses
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (course.modules.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-foreground mb-2">{course.title}</h2>
+          <p className="text-muted-foreground mb-4">This course doesn't have any content yet.</p>
+          <Link to="/courses" className="text-primary hover:underline">
+            Back to Courses
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -215,13 +218,13 @@ const CoursePage = () => {
             Back to Courses
           </Link>
           <h2 className="font-display font-semibold text-foreground line-clamp-2">
-            {mockCourse.title}
+            {course.title}
           </h2>
         </div>
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto p-3 space-y-2">
-          {mockCourse.modules.map((module) => (
+          {course.modules.map((module) => (
             <div key={module.id}>
               {/* Module header */}
               <button
@@ -279,12 +282,7 @@ const CoursePage = () => {
                     }
                   >
                     <ClipboardList className="w-4 h-4 shrink-0" />
-                    <span className="line-clamp-1">{module.assignment.title}</span>
-                    {module.assignment.score !== null && (
-                      <span className="ml-auto text-xs bg-success/10 text-success px-2 py-0.5 rounded-full">
-                        {module.assignment.score}%
-                      </span>
-                    )}
+                    <span className="line-clamp-1">{module.title} Quiz</span>
                   </button>
                 </div>
               )}
@@ -311,7 +309,7 @@ const CoursePage = () => {
             assignment={activeAssignment}
             onBackToLessons={handleQuizComplete}
           />
-        ) : (
+        ) : currentLesson ? (
           <LessonContent
             lesson={currentLesson}
             allLessons={allLessons}
@@ -323,6 +321,10 @@ const CoursePage = () => {
             isLastLessonInModule={isLastLessonInCurrentModule}
             isLastLessonInCourse={isLastLessonInCourse}
           />
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-muted-foreground">Select a lesson to begin</p>
+          </div>
         )}
 
         {/* Floating chat button */}
@@ -343,7 +345,7 @@ const CoursePage = () => {
           isOpen={isChatOpen} 
           onClose={() => setIsChatOpen(false)} 
           context={{
-            course: mockCourse.title,
+            course: course.title,
             lesson: currentLesson?.title,
           }}
         />
