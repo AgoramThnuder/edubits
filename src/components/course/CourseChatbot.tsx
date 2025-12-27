@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, forwardRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Send, Loader2, Bot, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ interface Message {
   content: string;
 }
 
-const CourseChatbot = ({ isOpen, onClose, context }: CourseChatbotProps) => {
+const CourseChatbot = forwardRef<HTMLDivElement, CourseChatbotProps>(({ isOpen, onClose, context }, ref) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -83,6 +83,7 @@ const CourseChatbot = ({ isOpen, onClose, context }: CourseChatbotProps) => {
     <AnimatePresence>
       {isOpen && (
         <motion.div
+          ref={ref}
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: 20 }}
@@ -180,6 +181,8 @@ const CourseChatbot = ({ isOpen, onClose, context }: CourseChatbotProps) => {
       )}
     </AnimatePresence>
   );
-};
+});
+
+CourseChatbot.displayName = "CourseChatbot";
 
 export default CourseChatbot;
