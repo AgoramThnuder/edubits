@@ -1,24 +1,20 @@
 import { forwardRef } from "react";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Menu, ClipboardList, CheckCircle2, Clock, FileText } from "lucide-react";
+import { ChevronLeft, ChevronRight, Menu, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface Lesson {
   id: string;
   title: string;
+  content: string;
+  duration_minutes: number;
   completed: boolean;
-}
-
-interface Assignment {
-  id: string;
-  title: string;
-  score: number | null;
 }
 
 interface LessonContentProps {
   lesson: Lesson | undefined;
+  moduleTitle?: string;
   allLessons: Lesson[];
-  currentAssignment?: Assignment;
   onToggleSidebar: () => void;
   sidebarCollapsed: boolean;
   onNavigate: (lessonId: string) => void;
@@ -26,8 +22,8 @@ interface LessonContentProps {
 
 const LessonContent = forwardRef<HTMLDivElement, LessonContentProps>(({ 
   lesson, 
+  moduleTitle,
   allLessons, 
-  currentAssignment,
   onToggleSidebar, 
   sidebarCollapsed,
   onNavigate 
@@ -44,6 +40,12 @@ const LessonContent = forwardRef<HTMLDivElement, LessonContentProps>(({
   const previousLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
   const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
 
+  // Parse content into paragraphs
+  const contentParagraphs = lesson.content
+    .split(/\n\n+/)
+    .map(p => p.trim())
+    .filter(p => p.length > 0);
+
   return (
     <div ref={ref} className="min-h-screen">
       {/* Toolbar */}
@@ -57,9 +59,13 @@ const LessonContent = forwardRef<HTMLDivElement, LessonContentProps>(({
             <Menu className="w-5 h-5 text-muted-foreground" />
           </button>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>Supervised Learning</span>
+            <span>{moduleTitle || "Module"}</span>
             <ChevronRight className="w-4 h-4" />
             <span className="text-foreground font-medium">{lesson.title}</span>
+          </div>
+          <div className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
+            <Clock className="w-3 h-3" />
+            <span>{lesson.duration_minutes} min</span>
           </div>
         </div>
       </div>
@@ -79,162 +85,28 @@ const LessonContent = forwardRef<HTMLDivElement, LessonContentProps>(({
               {lesson.title}
             </h1>
 
-            {/* Subtopic 1 */}
-            <section className="mb-10">
-              <h2 className="text-xl font-display font-medium text-foreground mb-4">
-                Understanding the Concept
-              </h2>
-              <p className="text-foreground/90 leading-loose mb-4">
-                Supervised learning is a type of machine learning where the algorithm learns from 
-                <span className="text-highlight font-medium"> labeled training data</span>. 
-                The goal is to learn a mapping from inputs to outputs based on example input-output pairs.
-              </p>
-              <p className="text-foreground/90 leading-loose">
-                Think of it like learning with a teacher who provides correct answers during practice. 
-                The algorithm uses these examples to find patterns and make predictions on new, unseen data.
-              </p>
-            </section>
-
-            {/* Key Insight */}
-            <div className="bg-accent/40 rounded-lg p-5 mb-10 border-l-4 border-primary">
-              <p className="text-sm font-medium text-foreground mb-1">💡 Key Insight</p>
-              <p className="text-muted-foreground leading-relaxed">
-                The "supervision" comes from the labels in the training data. Without labels, 
-                the algorithm wouldn't know what correct outputs look like.
-              </p>
-            </div>
-
-            {/* Subtopic 2 */}
-            <section className="mb-10">
-              <h2 className="text-xl font-display font-medium text-foreground mb-4">
-                Two Main Types
-              </h2>
-              <div className="space-y-4">
-                <div className="p-4 rounded-lg bg-card border border-border">
-                  <h3 className="font-medium text-foreground mb-2">Classification</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Predict a category or class. Example: Is this email spam or not spam?
-                  </p>
-                </div>
-                <div className="p-4 rounded-lg bg-card border border-border">
-                  <h3 className="font-medium text-foreground mb-2">Regression</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Predict a continuous value. Example: What will be the house price?
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            {/* Examples */}
-            <section className="mb-10">
-              <h2 className="text-xl font-display font-medium text-foreground mb-4">
-                Real-World Examples
-              </h2>
-              <ul className="space-y-3 text-foreground/90">
-                <li className="flex items-start gap-3">
-                  <span className="text-primary mt-1 font-bold">•</span>
-                  <span><strong>Email spam detection</strong> — Classify emails as spam or not spam</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-primary mt-1 font-bold">•</span>
-                  <span><strong>House price prediction</strong> — Predict price based on features like size, location</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-primary mt-1 font-bold">•</span>
-                  <span><strong>Medical diagnosis</strong> — Predict disease probability from symptoms</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-primary mt-1 font-bold">•</span>
-                  <span><strong>Credit scoring</strong> — Predict whether a loan applicant will default</span>
-                </li>
-              </ul>
-            </section>
-
-            {/* Quick Check */}
-            <div className="bg-secondary rounded-lg p-5 mb-10">
-              <p className="text-sm font-medium text-foreground mb-3">🧠 Quick Check</p>
-              <p className="text-muted-foreground mb-4">
-                If you're predicting customer churn (will leave or stay), is this classification or regression?
-              </p>
-              <details className="group">
-                <summary className="text-sm text-primary cursor-pointer hover:underline">
-                  Reveal Answer
-                </summary>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  This is <strong>classification</strong> because you're predicting a category (leave or stay), 
-                  not a continuous number.
+            {/* Lesson content */}
+            <div className="space-y-6">
+              {contentParagraphs.map((paragraph, index) => (
+                <p key={index} className="text-foreground/90 leading-loose">
+                  {paragraph}
                 </p>
-              </details>
+              ))}
             </div>
 
             {/* Key Takeaway */}
-            <div className="bg-primary/5 rounded-lg p-5 border border-primary/20 mb-10">
-              <p className="text-sm font-medium text-foreground mb-2">📌 Key Takeaway</p>
-              <p className="text-foreground/90 leading-relaxed">
-                Supervised learning uses labeled data to teach algorithms. The two main tasks are 
-                <strong> classification</strong> (predicting categories) and <strong>regression</strong> (predicting numbers).
-              </p>
-            </div>
-
-            {/* Quiz & Assignments Section */}
-            {currentAssignment && (
-              <section className="mb-10">
-                <h2 className="text-xl font-display font-medium text-foreground mb-4 flex items-center gap-2">
-                  <ClipboardList className="w-5 h-5 text-primary" />
-                  Quiz & Assignments
-                </h2>
-                <div className="space-y-3">
-                  <div className="p-4 rounded-lg bg-card border border-border flex items-center justify-between hover:border-primary/50 transition-colors cursor-pointer">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                        currentAssignment.score !== null 
-                          ? 'bg-success/10 text-success' 
-                          : 'bg-muted text-muted-foreground'
-                      }`}>
-                        {currentAssignment.score !== null ? (
-                          <CheckCircle2 className="w-5 h-5" />
-                        ) : (
-                          <FileText className="w-5 h-5" />
-                        )}
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground">{currentAssignment.title}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {currentAssignment.score !== null 
-                            ? `Completed • Score: ${currentAssignment.score}%` 
-                            : '10 questions • ~15 min'}
-                        </p>
-                      </div>
-                    </div>
-                    <Button 
-                      variant={currentAssignment.score !== null ? "outline" : "default"} 
-                      size="sm"
-                    >
-                      {currentAssignment.score !== null ? 'Review' : 'Start Quiz'}
-                    </Button>
-                  </div>
-                  
-                  {/* Practice Exercise */}
-                  <div className="p-4 rounded-lg bg-card border border-border flex items-center justify-between hover:border-primary/50 transition-colors cursor-pointer">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-muted text-muted-foreground flex items-center justify-center">
-                        <Clock className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground">Practice Exercise</p>
-                        <p className="text-sm text-muted-foreground">Hands-on coding challenge • ~20 min</p>
-                      </div>
-                    </div>
-                    <Button variant="outline" size="sm">
-                      Start
-                    </Button>
-                  </div>
-                </div>
-              </section>
+            {contentParagraphs.length > 0 && (
+              <div className="bg-primary/5 rounded-lg p-5 border border-primary/20 mt-10">
+                <p className="text-sm font-medium text-foreground mb-2">📌 Summary</p>
+                <p className="text-foreground/90 leading-relaxed">
+                  {contentParagraphs[0].slice(0, 200)}
+                  {contentParagraphs[0].length > 200 ? '...' : ''}
+                </p>
+              </div>
             )}
 
             {/* Navigation */}
-            <div className="flex items-center justify-between pt-8 border-t border-border">
+            <div className="flex items-center justify-between pt-8 mt-10 border-t border-border">
               <Button 
                 variant="outline" 
                 className="gap-2"

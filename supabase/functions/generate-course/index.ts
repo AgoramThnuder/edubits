@@ -192,12 +192,53 @@ Respond with ONLY valid JSON.`;
         completed_lessons: 0
       });
 
-    console.log('Course created successfully:', course.id);
+    // Insert modules and lessons into database
+    console.log('Saving modules and lessons to database...');
+    
+    for (let mIndex = 0; mIndex < courseData.modules.length; mIndex++) {
+      const moduleData = courseData.modules[mIndex];
+      
+      const { data: insertedModule, error: moduleError } = await supabaseClient
+        .from('modules')
+        .insert({
+          course_id: course.id,
+          title: moduleData.title,
+          order_index: mIndex
+        })
+        .select()
+        .single();
+
+      if (moduleError) {
+        console.error('Failed to save module:', moduleError);
+        continue;
+      }
+
+      if (insertedModule && moduleData.lessons) {
+        for (let lIndex = 0; lIndex < moduleData.lessons.length; lIndex++) {
+          const lessonData = moduleData.lessons[lIndex];
+          
+          const { error: lessonError } = await supabaseClient
+            .from('lessons')
+            .insert({
+              module_id: insertedModule.id,
+              title: lessonData.title,
+              content: lessonData.content || '',
+              duration_minutes: lessonData.duration_minutes || 5,
+              order_index: lIndex
+            });
+
+          if (lessonError) {
+            console.error('Failed to save lesson:', lessonError);
+          }
+        }
+      }
+    }
+
+    console.log('Course created successfully with modules and lessons:', course.id);
 
     return new Response(JSON.stringify({ 
       success: true, 
-      course,
-      modules: courseData.modules 
+      course
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

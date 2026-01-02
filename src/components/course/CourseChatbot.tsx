@@ -11,6 +11,7 @@ interface CourseChatbotProps {
   context: {
     course: string;
     lesson: string | undefined;
+    lessonContent?: string;
   };
 }
 
