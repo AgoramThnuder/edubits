@@ -72,12 +72,18 @@ const CoursesPage = () => {
   };
 
   const categoryNames = useMemo(() => {
-    return ["All", ...categories.map((c) => c.name)];
-  }, [categories]);
+    const validCategories = courses
+      .map(c => c.categories?.name)
+      .filter((name): name is string => Boolean(name));
+
+    const uniqueCategories = Array.from(new Set(validCategories)).sort();
+
+    return ["All", ...uniqueCategories];
+  }, [courses]);
 
   const filteredCourses = useMemo(() => {
     return courses.filter((course) => {
-      const matchesSearch = 
+      const matchesSearch =
         course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (course.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
       const matchesCategory = selectedCategory === "All" || course.categories?.name === selectedCategory;
@@ -173,7 +179,7 @@ const CoursesPage = () => {
               className="pl-10 pr-10"
             />
             {searchQuery && (
-              <button 
+              <button
                 onClick={() => setSearchQuery("")}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
@@ -186,11 +192,10 @@ const CoursesPage = () => {
               <button
                 key={category}
                 onClick={() => setSelectedCategory(category)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  selectedCategory === category
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${selectedCategory === category
                     ? "bg-primary text-primary-foreground"
                     : "bg-secondary text-muted-foreground hover:text-foreground"
-                }`}
+                  }`}
               >
                 {category}
               </button>
@@ -226,7 +231,7 @@ const CoursesPage = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <div 
+              <div
                 className="dashboard-card h-full min-h-[240px] flex flex-col items-center justify-center text-center cursor-pointer hover:border-accent/50 transition-colors p-4"
                 onClick={() => setIsCreateModalOpen(true)}
               >
@@ -257,113 +262,113 @@ const CoursesPage = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: (index + 1) * 0.05 }}
                 >
-                    <div 
-                      className="dashboard-card card-lift overflow-hidden cursor-pointer group p-4"
-                      onClick={() => navigate(`/course/${course.id}`)}
-                    >
-                      {/* Course Image */}
-                      <div className="relative h-28 -mx-4 -mt-4 mb-3 overflow-hidden">
-                        <img 
-                          src={course.image_url || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=250&fit=crop"} 
-                          alt={course.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                        <div className="absolute top-2 left-2">
-                          <span className="px-2 py-0.5 bg-card/90 backdrop-blur-sm rounded-full text-[10px] font-medium text-foreground">
-                            {course.categories?.name || "General"}
-                          </span>
-                        </div>
-                        {/* Delete button - only show for course creator */}
-                        {course.created_by === user?.id && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <button
+                  <div
+                    className="dashboard-card card-lift overflow-hidden cursor-pointer group p-4"
+                    onClick={() => navigate(`/course/${course.id}`)}
+                  >
+                    {/* Course Image */}
+                    <div className="relative h-28 -mx-4 -mt-4 mb-3 overflow-hidden">
+                      <img
+                        src={course.image_url || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=250&fit=crop"}
+                        alt={course.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute top-2 left-2">
+                        <span className="px-2 py-0.5 bg-card/90 backdrop-blur-sm rounded-full text-[10px] font-medium text-foreground">
+                          {course.categories?.name || "General"}
+                        </span>
+                      </div>
+                      {/* Delete button - only show for course creator */}
+                      {course.created_by === user?.id && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                              }}
+                              className="absolute top-2 right-2 p-1.5 bg-destructive/90 backdrop-blur-sm rounded-full text-destructive-foreground hover:bg-destructive transition-colors z-10"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Course</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete "{course.title}"? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  handleDeleteCourse(course.id, e);
                                 }}
-                                className="absolute top-2 right-2 p-1.5 bg-destructive/90 backdrop-blur-sm rounded-full text-destructive-foreground hover:bg-destructive transition-colors z-10"
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Course</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete "{course.title}"? This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDeleteCourse(course.id, e);
-                                  }}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  {deleteCourse.isPending ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                  ) : (
-                                    "Delete"
-                                  )}
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
-                      </div>
-
-                      {/* Course Info */}
-                      <h3 className="text-sm font-semibold text-foreground mb-1 group-hover:text-primary transition-colors line-clamp-2">
-                        {course.title}
-                      </h3>
-                      <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
-                        {course.description || "No description available"}
-                      </p>
-
-                      {/* Stats */}
-                      <div className="flex items-center gap-3 text-[10px] text-muted-foreground mb-3">
-                        <span className="flex items-center gap-1">
-                          <BookOpen className="w-3 h-3" />
-                          {course.total_lessons} lessons
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {course.duration_hours}h
-                        </span>
-                      </div>
-
-                      {/* Progress or Enroll */}
-                      {isEnrolled && enrollment ? (
-                        <div className="space-y-1.5">
-                          <div className="flex items-center justify-between text-[10px]">
-                            <span className="text-muted-foreground">Progress</span>
-                            <span className="font-medium text-foreground">{enrollment.progress}%</span>
-                          </div>
-                          <Progress value={enrollment.progress} className="h-1" />
-                        </div>
-                      ) : (
-                        <Button
-                          size="sm"
-                          className="w-full h-7 text-xs"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEnroll(course.id, e);
-                          }}
-                          disabled={enrollInCourse.isPending}
-                        >
-                          {enrollInCourse.isPending ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : (
-                            <>
-                              Enroll Now
-                              <ChevronRight className="w-3 h-3 ml-1" />
-                            </>
-                          )}
-                        </Button>
+                                {deleteCourse.isPending ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  "Delete"
+                                )}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       )}
                     </div>
+
+                    {/* Course Info */}
+                    <h3 className="text-sm font-semibold text-foreground mb-1 group-hover:text-primary transition-colors line-clamp-2">
+                      {course.title}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+                      {course.description || "No description available"}
+                    </p>
+
+                    {/* Stats */}
+                    <div className="flex items-center gap-3 text-[10px] text-muted-foreground mb-3">
+                      <span className="flex items-center gap-1">
+                        <BookOpen className="w-3 h-3" />
+                        {course.total_lessons} lessons
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {course.duration_hours}h
+                      </span>
+                    </div>
+
+                    {/* Progress or Enroll */}
+                    {isEnrolled && enrollment ? (
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-[10px]">
+                          <span className="text-muted-foreground">Progress</span>
+                          <span className="font-medium text-foreground">{enrollment.progress}%</span>
+                        </div>
+                        <Progress value={enrollment.progress} className="h-1" />
+                      </div>
+                    ) : (
+                      <Button
+                        size="sm"
+                        className="w-full h-7 text-xs"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEnroll(course.id, e);
+                        }}
+                        disabled={enrollInCourse.isPending}
+                      >
+                        {enrollInCourse.isPending ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <>
+                            Enroll Now
+                            <ChevronRight className="w-3 h-3 ml-1" />
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
                 </motion.div>
               );
             })}
@@ -371,9 +376,9 @@ const CoursesPage = () => {
         )}
       </main>
 
-      <CreateCourseModal 
-        isOpen={isCreateModalOpen} 
-        onClose={() => setIsCreateModalOpen(false)} 
+      <CreateCourseModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
       />
     </div>
   );

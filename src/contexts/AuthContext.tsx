@@ -61,7 +61,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-        
+
         if (session?.user) {
           // Defer profile fetch to avoid deadlock
           setTimeout(() => {
@@ -77,7 +77,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (session?.user) {
         fetchProfile(session.user.id);
       }
@@ -89,7 +89,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signUp = async (email: string, password: string, displayName?: string) => {
     const redirectUrl = `${window.location.origin}/`;
-    
+
+    console.log("Attempting sign up with:", email);
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -101,14 +102,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       },
     });
 
+    if (error) console.error("Sign up error:", error);
+
     return { error: error as Error | null };
   };
 
   const signIn = async (email: string, password: string) => {
+    console.log("Attempting sign in with:", email);
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+
+    if (error) console.error("Sign in error:", error);
 
     return { error: error as Error | null };
   };

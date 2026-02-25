@@ -13,10 +13,10 @@ serve(async (req) => {
 
   try {
     const { topic, difficulty } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
+    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+
+    if (!GEMINI_API_KEY) {
+      throw new Error('GEMINI_API_KEY is not configured');
     }
 
     // Get user from auth header
@@ -31,6 +31,12 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
+    // Create an admin client to bypass RLS for inserting generated modules and lessons
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     if (userError || !user) {
       throw new Error('Unauthorized');
@@ -38,7 +44,7 @@ serve(async (req) => {
 
     console.log('Generating course for topic:', topic, 'difficulty:', difficulty);
 
-    const systemPrompt = `You are an expert educational content creator. Your task is to create a course ONLY about the specific topic provided by the user.
+    const systemPrompt = `You are an expert educational content creator. Your task is to create a course ONLY about the specific topic provided by the user, including a final MCQ quiz.
 
 CRITICAL: The course MUST be about the EXACT topic specified. Do NOT generate content about any other subject.
 
@@ -59,6 +65,13 @@ You MUST respond with ONLY valid JSON (no markdown, no code blocks, no extra tex
         }
       ]
     }
+  ],
+  "quiz": [
+    {
+      "question": "A clear multiple-choice question testing knowledge from the course",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correct_option_index": 0 // The zero-based index of the correct option in the array
+    }
   ]
 }
 
@@ -68,6 +81,7 @@ Guidelines:
 - For advanced: 5 modules, 4-5 lessons each, complex topics
 - Each lesson content should be 150-300 words of plain text
 - ALL content must be specifically about the requested topic
+- Generate exactly 5 questions for the quiz that span topics from the whole course
 - DO NOT use markdown, code blocks, or special characters in content`;
 
     const userPrompt = `Create a ${difficulty} level mini-course SPECIFICALLY about: "${topic}". 
@@ -76,43 +90,33 @@ IMPORTANT: Every module and lesson must be about ${topic} and nothing else. The 
 
 Respond with ONLY valid JSON.`;
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        response_format: { type: 'json_object' },
+        system_instruction: {
+          parts: [{ text: systemPrompt }]
+        },
+        contents: [{
+          role: 'user',
+          parts: [{ text: userPrompt }]
+        }],
+        generationConfig: {
+          responseMimeType: "application/json",
+        }
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AI gateway error:', response.status, errorText);
-      
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: 'AI credits exhausted. Please add credits.' }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      throw new Error(`AI gateway error: ${response.status}`);
+      console.error('Gemini API error:', response.status, errorText);
+      throw new Error(`Gemini API error: ${response.status}`);
     }
 
     const aiData = await response.json();
-    const generatedContent = aiData.choices?.[0]?.message?.content;
+    const generatedContent = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!generatedContent) {
       throw new Error('No content generated');
@@ -125,12 +129,12 @@ Respond with ONLY valid JSON.`;
     try {
       // Clean the response - remove any markdown code blocks if present
       let jsonStr = generatedContent.trim();
-      
+
       // Remove markdown code block wrapper if present
       if (jsonStr.startsWith('```')) {
         jsonStr = jsonStr.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '');
       }
-      
+
       courseData = JSON.parse(jsonStr);
     } catch (parseError) {
       console.error('Failed to parse AI response:', parseError);
@@ -141,8 +145,8 @@ Respond with ONLY valid JSON.`;
     // Create or get category
     let categoryId = null;
     const categoryName = topic.split(' ')[0]; // Simple category from first word
-    
-    const { data: existingCategory } = await supabaseClient
+
+    const { data: existingCategory } = await supabaseAdmin
       .from('categories')
       .select('id')
       .eq('name', categoryName)
@@ -151,19 +155,19 @@ Respond with ONLY valid JSON.`;
     if (existingCategory) {
       categoryId = existingCategory.id;
     } else {
-      const { data: newCategory, error: catError } = await supabaseClient
+      const { data: newCategory, error: catError } = await supabaseAdmin
         .from('categories')
         .insert({ name: categoryName, color: '#6366f1' })
         .select('id')
         .single();
-      
+
       if (newCategory) {
         categoryId = newCategory.id;
       }
     }
 
     // Insert course into database
-    const { data: course, error: courseError } = await supabaseClient
+    const { data: course, error: courseError } = await supabaseAdmin
       .from('courses')
       .insert({
         title: courseData.title,
@@ -183,7 +187,7 @@ Respond with ONLY valid JSON.`;
     }
 
     // Auto-enroll user in the course
-    await supabaseClient
+    await supabaseAdmin
       .from('user_enrollments')
       .insert({
         user_id: user.id,
@@ -194,11 +198,11 @@ Respond with ONLY valid JSON.`;
 
     // Insert modules and lessons into database
     console.log('Saving modules and lessons to database...');
-    
+
     for (let mIndex = 0; mIndex < courseData.modules.length; mIndex++) {
       const moduleData = courseData.modules[mIndex];
-      
-      const { data: insertedModule, error: moduleError } = await supabaseClient
+
+      const { data: insertedModule, error: moduleError } = await supabaseAdmin
         .from('modules')
         .insert({
           course_id: course.id,
@@ -216,8 +220,8 @@ Respond with ONLY valid JSON.`;
       if (insertedModule && moduleData.lessons) {
         for (let lIndex = 0; lIndex < moduleData.lessons.length; lIndex++) {
           const lessonData = moduleData.lessons[lIndex];
-          
-          const { error: lessonError } = await supabaseClient
+
+          const { error: lessonError } = await supabaseAdmin
             .from('lessons')
             .insert({
               module_id: insertedModule.id,
@@ -234,10 +238,43 @@ Respond with ONLY valid JSON.`;
       }
     }
 
-    console.log('Course created successfully with modules and lessons:', course.id);
+    console.log('Saving quiz to database...');
+    if (courseData.quiz && courseData.quiz.length > 0) {
+      const { data: insertedQuiz, error: quizError } = await supabaseAdmin
+        .from('quizzes')
+        .insert({
+          course_id: course.id,
+          title: `Final Quiz: ${courseData.title}`
+        })
+        .select()
+        .single();
 
-    return new Response(JSON.stringify({ 
-      success: true, 
+      if (quizError) {
+        console.error('Failed to save quiz:', quizError);
+      } else if (insertedQuiz) {
+        for (let qIndex = 0; qIndex < courseData.quiz.length; qIndex++) {
+          const qData = courseData.quiz[qIndex];
+          const { error: questionError } = await supabaseAdmin
+            .from('quiz_questions')
+            .insert({
+              quiz_id: insertedQuiz.id,
+              question: qData.question,
+              options: qData.options,
+              correct_option_index: qData.correct_option_index,
+              order_index: qIndex
+            });
+
+          if (questionError) {
+            console.error('Failed to save quiz question:', questionError);
+          }
+        }
+      }
+    }
+
+    console.log('Course created successfully with modules, lessons, and quiz:', course.id);
+
+    return new Response(JSON.stringify({
+      success: true,
       course
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

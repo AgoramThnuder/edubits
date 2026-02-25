@@ -1,7 +1,8 @@
-import { forwardRef } from "react";
+import { forwardRef, useState } from "react";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Menu, Clock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Menu, Clock, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useMarkLessonComplete } from "@/hooks/useCourseDetails";
 
 interface Lesson {
   id: string;
@@ -12,25 +13,34 @@ interface Lesson {
 }
 
 interface LessonContentProps {
+  courseId: string;
   lesson: Lesson | undefined;
   moduleTitle?: string;
   allLessons: Lesson[];
   onToggleSidebar: () => void;
   sidebarCollapsed: boolean;
   onNavigate: (lessonId: string) => void;
+  onTakeQuiz?: () => void;
+  hasQuiz?: boolean;
 }
 
-const LessonContent = forwardRef<HTMLDivElement, LessonContentProps>(({ 
-  lesson, 
+const LessonContent = forwardRef<HTMLDivElement, LessonContentProps>(({
+  courseId,
+  lesson,
   moduleTitle,
-  allLessons, 
-  onToggleSidebar, 
+  allLessons,
+  onToggleSidebar,
   sidebarCollapsed,
-  onNavigate 
+  onNavigate,
+  onTakeQuiz,
+  hasQuiz
 }, ref) => {
+  const { markComplete } = useMarkLessonComplete(courseId);
+  const [isCompleting, setIsCompleting] = useState(false);
+
   if (!lesson) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex flex-col items-center justify-center h-screen space-y-4">
         <p className="text-muted-foreground">Select a lesson to begin</p>
       </div>
     );
@@ -45,6 +55,20 @@ const LessonContent = forwardRef<HTMLDivElement, LessonContentProps>(({
     .split(/\n\n+/)
     .map(p => p.trim())
     .filter(p => p.length > 0);
+
+  const handleNext = async () => {
+    setIsCompleting(true);
+    // Mark current lesson as complete
+    await markComplete(lesson.id);
+    setIsCompleting(false);
+
+    // Navigate to next lesson or quiz
+    if (nextLesson) {
+      onNavigate(nextLesson.id);
+    } else if (hasQuiz && onTakeQuiz) {
+      onTakeQuiz();
+    }
+  };
 
   return (
     <div ref={ref} className="min-h-screen">
@@ -107,22 +131,24 @@ const LessonContent = forwardRef<HTMLDivElement, LessonContentProps>(({
 
             {/* Navigation */}
             <div className="flex items-center justify-between pt-8 mt-10 border-t border-border">
-              <Button 
-                variant="outline" 
-                className="gap-2"
+              <Button
+                variant="outline"
+                className="gap-2 shrink-0"
                 disabled={!previousLesson}
                 onClick={() => previousLesson && onNavigate(previousLesson.id)}
               >
                 <ChevronLeft className="w-4 h-4" />
-                Previous Lesson
+                Previous
               </Button>
-              <Button 
+
+              <Button
                 className="gap-2"
-                disabled={!nextLesson}
-                onClick={() => nextLesson && onNavigate(nextLesson.id)}
+                onClick={handleNext}
+                disabled={isCompleting || (!nextLesson && !hasQuiz)}
               >
-                Next Lesson
-                <ChevronRight className="w-4 h-4" />
+                {isCompleting && <Loader2 className="w-4 h-4 animate-spin" />}
+                {nextLesson ? "Next Lesson" : hasQuiz ? "Take Course Quiz" : "Finished"}
+                {(!isCompleting && (nextLesson || hasQuiz)) && <ChevronRight className="w-4 h-4" />}
               </Button>
             </div>
           </div>

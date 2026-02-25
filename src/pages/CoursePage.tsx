@@ -1,18 +1,20 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { 
-  ChevronRight, 
+import {
+  ChevronRight,
   ChevronDown,
   CheckCircle2,
   Circle,
   BarChart3,
   Home,
   MessageCircleQuestion,
-  Loader2
+  Loader2,
+  Trophy
 } from "lucide-react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import LessonContent from "@/components/course/LessonContent";
 import CourseChatbot from "@/components/course/CourseChatbot";
+import CourseQuiz from "@/components/course/CourseQuiz";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLogActivity } from "@/hooks/useActivity";
 import { useCourseDetails } from "@/hooks/useCourseDetails";
@@ -22,12 +24,13 @@ const CoursePage = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { data: course, isLoading: courseLoading } = useCourseDetails(courseId);
-  
+
   const [expandedModules, setExpandedModules] = useState<string[]>([]);
   const [activeLesson, setActiveLesson] = useState<string | null>(null);
+  const [isTakingQuiz, setIsTakingQuiz] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  
+
   const logActivity = useLogActivity();
   const startTimeRef = useRef<number>(Date.now());
 
@@ -44,7 +47,7 @@ const CoursePage = () => {
       // Expand first two modules by default
       const initialExpanded = course.modules.slice(0, 2).map(m => m.id);
       setExpandedModules(initialExpanded);
-      
+
       // Set first lesson as active if none selected
       if (!activeLesson) {
         const firstLesson = course.modules[0]?.lessons[0];
@@ -58,10 +61,10 @@ const CoursePage = () => {
   // Track study time when lesson changes or component unmounts
   useEffect(() => {
     if (!activeLesson || !user) return;
-    
+
     startTimeRef.current = Date.now();
     logActivity.mutate(0.05); // Log 3 minutes as initial activity
-    
+
     return () => {
       const timeSpent = (Date.now() - startTimeRef.current) / 1000 / 60 / 60;
       if (timeSpent >= 0.008 && user) {
@@ -73,7 +76,7 @@ const CoursePage = () => {
   // Log activity periodically (every 2 minutes)
   useEffect(() => {
     if (!user || !activeLesson) return;
-    
+
     const interval = setInterval(() => {
       const now = Date.now();
       const timeSpent = (now - startTimeRef.current) / 1000 / 60 / 60;
@@ -96,9 +99,10 @@ const CoursePage = () => {
 
   const handleNavigate = (lessonId: string) => {
     setActiveLesson(lessonId);
+    setIsTakingQuiz(false);
     // Ensure the module containing the lesson is expanded
     if (course) {
-      const module = course.modules.find(m => 
+      const module = course.modules.find(m =>
         m.lessons.some(l => l.id === lessonId)
       );
       if (module && !expandedModules.includes(module.id)) {
@@ -135,7 +139,7 @@ const CoursePage = () => {
   // Get all lessons flattened
   const allLessons = course.modules.flatMap(m => m.lessons);
   const currentLesson = allLessons.find(l => l.id === activeLesson);
-  const currentModule = course.modules.find(m => 
+  const currentModule = course.modules.find(m =>
     m.lessons.some(l => l.id === activeLesson)
   );
 
@@ -182,12 +186,11 @@ const CoursePage = () => {
                   {module.lessons.map((lesson) => (
                     <button
                       key={lesson.id}
-                      onClick={() => setActiveLesson(lesson.id)}
-                      className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm transition-colors ${
-                        activeLesson === lesson.id
+                      onClick={() => handleNavigate(lesson.id)}
+                      className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm transition-colors ${activeLesson === lesson.id && !isTakingQuiz
                           ? "bg-sidebar-accent text-sidebar-accent-foreground"
                           : "text-muted-foreground hover:bg-sidebar-accent/50"
-                      }`}
+                        }`}
                     >
                       {lesson.completed ? (
                         <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
@@ -201,6 +204,21 @@ const CoursePage = () => {
               )}
             </div>
           ))}
+
+          {course.quiz && course.quiz.questions.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-sidebar-border/50">
+              <button
+                onClick={() => setIsTakingQuiz(true)}
+                className={`w-full flex items-center gap-2 px-3 py-3 rounded-lg text-left text-sm font-medium transition-colors ${isTakingQuiz
+                    ? "bg-primary/10 text-primary border border-primary/20"
+                    : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground"
+                  }`}
+              >
+                <Trophy className="w-4 h-4 shrink-0" />
+                <span>Final Quiz</span>
+              </button>
+            </div>
+          )}
         </nav>
 
         {/* Performance link */}
@@ -217,15 +235,29 @@ const CoursePage = () => {
 
       {/* Main content */}
       <main className="flex-1 min-w-0">
-        {/* Lesson content */}
-        <LessonContent 
-          lesson={currentLesson}
-          moduleTitle={currentModule?.title}
-          allLessons={allLessons}
-          onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
-          sidebarCollapsed={sidebarCollapsed}
-          onNavigate={handleNavigate}
-        />
+        {/* Lesson content or Quiz */}
+        {isTakingQuiz && course.quiz ? (
+          <CourseQuiz
+            quiz={course.quiz}
+            onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
+            onFinish={(score, total) => {
+              // Note: Normally we would record this completion to the DB here
+              console.log("Quiz finished with score", score, "/", total);
+            }}
+          />
+        ) : (
+          <LessonContent
+            courseId={course.id}
+            lesson={currentLesson}
+            moduleTitle={currentModule?.title}
+            allLessons={allLessons}
+            onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
+            sidebarCollapsed={sidebarCollapsed}
+            onNavigate={handleNavigate}
+            onTakeQuiz={() => setIsTakingQuiz(true)}
+            hasQuiz={!!(course.quiz && course.quiz.questions.length > 0)}
+          />
+        )}
 
         {/* Floating chat button */}
         <motion.button
@@ -241,9 +273,9 @@ const CoursePage = () => {
         </motion.button>
 
         {/* Chatbot panel */}
-        <CourseChatbot 
-          isOpen={isChatOpen} 
-          onClose={() => setIsChatOpen(false)} 
+        <CourseChatbot
+          isOpen={isChatOpen}
+          onClose={() => setIsChatOpen(false)}
           context={{
             course: course.title,
             lesson: currentLesson?.title,
