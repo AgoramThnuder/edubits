@@ -81,6 +81,7 @@ const CourseChatbot = forwardRef<HTMLDivElement, CourseChatbotProps>(({ isOpen, 
         body: JSON.stringify({
           messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
           context,
+          geminiApiKey: import.meta.env.VITE_GEMINI_API_KEY,
         }),
       });
 
@@ -231,9 +232,8 @@ const CourseChatbot = forwardRef<HTMLDivElement, CourseChatbotProps>(({ isOpen, 
                 className={`flex gap-3 ${message.role === "user" ? "flex-row-reverse" : ""}`}
               >
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                    message.role === "user" ? "bg-primary" : "bg-accent"
-                  }`}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${message.role === "user" ? "bg-primary" : "bg-accent"
+                    }`}
                 >
                   {message.role === "user" ? (
                     <User className="w-4 h-4 text-primary-foreground" />
@@ -242,11 +242,10 @@ const CourseChatbot = forwardRef<HTMLDivElement, CourseChatbotProps>(({ isOpen, 
                   )}
                 </div>
                 <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                    message.role === "user"
+                  className={`max-w-[80%] rounded-2xl px-4 py-3 ${message.role === "user"
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted text-foreground"
-                  }`}
+                    }`}
                 >
                   <p className="text-sm whitespace-pre-wrap leading-relaxed">
                     {message.content || (isLoading && message.role === "assistant" ? "..." : "")}

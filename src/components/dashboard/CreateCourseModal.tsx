@@ -28,7 +28,7 @@ const CreateCourseModal = ({ isOpen, onClose }: CreateCourseModalProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!topic.trim()) {
       toast({
         title: "Topic required",
@@ -42,7 +42,11 @@ const CreateCourseModal = ({ isOpen, onClose }: CreateCourseModalProps) => {
 
     try {
       const { data, error } = await supabase.functions.invoke('generate-course', {
-        body: { topic: topic.trim(), difficulty }
+        body: {
+          topic: topic.trim(),
+          difficulty,
+          geminiApiKey: import.meta.env.VITE_GEMINI_API_KEY
+        }
       });
 
       if (error) {
@@ -57,11 +61,11 @@ const CreateCourseModal = ({ isOpen, onClose }: CreateCourseModalProps) => {
         title: "Course created!",
         description: `Your mini-course on "${topic}" is ready.`,
       });
-      
+
       onClose();
       setTopic("");
       setDifficulty("beginner");
-      
+
       if (data?.course?.id) {
         navigate(`/course/${data.course.id}`);
       } else {
@@ -155,15 +159,13 @@ const CreateCourseModal = ({ isOpen, onClose }: CreateCourseModalProps) => {
                       type="button"
                       onClick={() => setDifficulty(d.value)}
                       disabled={isGenerating}
-                      className={`flex items-center gap-4 p-4 rounded-xl border text-left transition-all duration-200 disabled:opacity-50 ${
-                        difficulty === d.value
+                      className={`flex items-center gap-4 p-4 rounded-xl border text-left transition-all duration-200 disabled:opacity-50 ${difficulty === d.value
                           ? "border-primary bg-accent/50"
                           : "border-border hover:border-primary/30"
-                      }`}
+                        }`}
                     >
-                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                        difficulty === d.value ? "border-primary" : "border-muted-foreground"
-                      }`}>
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${difficulty === d.value ? "border-primary" : "border-muted-foreground"
+                        }`}>
                         {difficulty === d.value && (
                           <div className="w-2 h-2 rounded-full bg-primary" />
                         )}
@@ -178,8 +180,8 @@ const CreateCourseModal = ({ isOpen, onClose }: CreateCourseModalProps) => {
               </div>
 
               {/* Submit button */}
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 size="lg"
                 className="w-full"
                 disabled={isGenerating}

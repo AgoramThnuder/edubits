@@ -11,11 +11,11 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, context } = await req.json();
-    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+    const { messages, context, geminiApiKey } = await req.json();
+    const GEMINI_API_KEY = geminiApiKey || Deno.env.get('GEMINI_API_KEY');
 
     if (!GEMINI_API_KEY) {
-      throw new Error('GEMINI_API_KEY is not configured');
+      throw new Error('GEMINI_API_KEY is not configured in secrets or env');
     }
 
     console.log('Course chat request for context:', context);
