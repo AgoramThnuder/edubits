@@ -7,7 +7,6 @@ import {
   Circle,
   BarChart3,
   Home,
-  MessageCircleQuestion,
   Loader2,
   Trophy
 } from "lucide-react";
@@ -188,8 +187,8 @@ const CoursePage = () => {
                       key={lesson.id}
                       onClick={() => handleNavigate(lesson.id)}
                       className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm transition-colors ${activeLesson === lesson.id && !isTakingQuiz
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                          : "text-muted-foreground hover:bg-sidebar-accent/50"
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                        : "text-muted-foreground hover:bg-sidebar-accent/50"
                         }`}
                     >
                       {lesson.completed ? (
@@ -210,8 +209,8 @@ const CoursePage = () => {
               <button
                 onClick={() => setIsTakingQuiz(true)}
                 className={`w-full flex items-center gap-2 px-3 py-3 rounded-lg text-left text-sm font-medium transition-colors ${isTakingQuiz
-                    ? "bg-primary/10 text-primary border border-primary/20"
-                    : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground"
+                  ? "bg-primary/10 text-primary border border-primary/20"
+                  : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground"
                   }`}
               >
                 <Trophy className="w-4 h-4 shrink-0" />
@@ -256,21 +255,9 @@ const CoursePage = () => {
             onNavigate={handleNavigate}
             onTakeQuiz={() => setIsTakingQuiz(true)}
             hasQuiz={!!(course.quiz && course.quiz.questions.length > 0)}
+            onOpenChat={() => setIsChatOpen(true)}
           />
         )}
-
-        {/* Floating chat button */}
-        <motion.button
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setIsChatOpen(true)}
-          className="fixed bottom-24 right-6 flex items-center gap-2 px-5 py-3 bg-primary text-primary-foreground rounded-full shadow-lg hover:shadow-xl transition-shadow z-40"
-        >
-          <MessageCircleQuestion className="w-5 h-5" />
-          <span className="font-medium">Have a doubt?</span>
-        </motion.button>
 
         {/* Chatbot panel */}
         <CourseChatbot

@@ -239,13 +239,16 @@ export const useDeleteCourse = () => {
         .eq("course_id", courseId);
 
       // Then delete the course
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("courses")
         .delete()
         .eq("id", courseId)
-        .eq("created_by", user.id);
+        .select();
 
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error("You do not have permission to delete this course (or it does not exist).");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["courses"] });

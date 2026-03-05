@@ -1,11 +1,14 @@
+// @ts-ignore
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+declare const Deno: any;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -20,16 +23,19 @@ serve(async (req) => {
 
     console.log('Course chat request for context:', context);
 
-    const systemPrompt = `You are a helpful learning assistant for an online course platform. You are currently helping a student with the course "${context.course}" ${context.lesson ? `and they are on the lesson "${context.lesson}"` : ''}.
+    const systemPrompt = `You are a strict, focused learning assistant for an online course platform. You are currently helping a student with the course "${context.course}" ${context.lesson ? `and they are specifically on the lesson "${context.lesson}"` : ''}.
+
+CRITICAL RULE: You MUST ONLY answer questions that are directly related to the material covered in the course "${context.course}". If the user asks a question about ANY topic outside the scope of this specific course, you MUST refuse to answer and gently remind them that you can only help with topics related to "${context.course}".
+
+${context.lessonContent ? `\nFor context, here is the text of the lesson they are currently reading:\n"""\n${context.lessonContent}\n"""\n` : ''}
 
 Your role:
-- Answer questions about the course material clearly and concisely
-- Explain concepts in simple terms with examples
-- Help students understand difficult topics
-- Encourage learning and provide helpful tips
-- Use markdown formatting for better readability (bold, bullet points, etc.)
-
-Keep responses focused, educational, and encouraging. If asked about topics outside the course scope, gently redirect to the course material.`;
+- Answer questions ONLY about the course material clearly and concisely.
+- Explain concepts in simple terms with examples.
+- Help students understand difficult topics.
+- Encourage learning and provide helpful tips.
+- Use markdown formatting for better readability (bold, bullet points, etc.).
+- NEVER answer questions outside the scope of "${context.course}".`;
 
     // Map OpenAI-style messages to Gemini-style contents
     const contents = messages.map((msg: any) => ({

@@ -1,6 +1,6 @@
 import { forwardRef, useState } from "react";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Menu, Clock, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Menu, Clock, Loader2, MessageCircleQuestion } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMarkLessonComplete } from "@/hooks/useCourseDetails";
 
@@ -22,6 +22,7 @@ interface LessonContentProps {
   onNavigate: (lessonId: string) => void;
   onTakeQuiz?: () => void;
   hasQuiz?: boolean;
+  onOpenChat?: () => void;
 }
 
 const LessonContent = forwardRef<HTMLDivElement, LessonContentProps>(({
@@ -33,7 +34,8 @@ const LessonContent = forwardRef<HTMLDivElement, LessonContentProps>(({
   sidebarCollapsed,
   onNavigate,
   onTakeQuiz,
-  hasQuiz
+  hasQuiz,
+  onOpenChat
 }, ref) => {
   const { markComplete } = useMarkLessonComplete(courseId);
   const [isCompleting, setIsCompleting] = useState(false);
@@ -130,7 +132,7 @@ const LessonContent = forwardRef<HTMLDivElement, LessonContentProps>(({
             )}
 
             {/* Navigation */}
-            <div className="flex items-center justify-between pt-8 mt-10 border-t border-border">
+            <div className="flex items-center justify-between pt-8 mt-10 border-t border-border gap-4 flex-wrap">
               <Button
                 variant="outline"
                 className="gap-2 shrink-0"
@@ -140,6 +142,17 @@ const LessonContent = forwardRef<HTMLDivElement, LessonContentProps>(({
                 <ChevronLeft className="w-4 h-4" />
                 Previous
               </Button>
+
+              {onOpenChat && (
+                <Button
+                  variant="secondary"
+                  onClick={onOpenChat}
+                  className="gap-2 flex-1 md:flex-none border border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary"
+                >
+                  <MessageCircleQuestion className="w-4 h-4" />
+                  Ask AI Tutor
+                </Button>
+              )}
 
               <Button
                 className="gap-2"

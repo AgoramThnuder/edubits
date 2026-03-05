@@ -138,7 +138,7 @@ const CourseChatbot = forwardRef<HTMLDivElement, CourseChatbotProps>(({ isOpen, 
 
           try {
             const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            const content = parsed.candidates?.[0]?.content?.parts?.[0]?.text as string | undefined;
             if (content) {
               assistantContent += content;
               setMessages((prev) =>
@@ -165,7 +165,7 @@ const CourseChatbot = forwardRef<HTMLDivElement, CourseChatbotProps>(({ isOpen, 
           if (jsonStr === "[DONE]") continue;
           try {
             const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            const content = parsed.candidates?.[0]?.content?.parts?.[0]?.text as string | undefined;
             if (content) {
               assistantContent += content;
               setMessages((prev) =>
@@ -243,8 +243,8 @@ const CourseChatbot = forwardRef<HTMLDivElement, CourseChatbotProps>(({ isOpen, 
                 </div>
                 <div
                   className={`max-w-[80%] rounded-2xl px-4 py-3 ${message.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-foreground"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-foreground"
                     }`}
                 >
                   <p className="text-sm whitespace-pre-wrap leading-relaxed">

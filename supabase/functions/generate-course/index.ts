@@ -1,12 +1,16 @@
+// @ts-ignore
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// @ts-ignore
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+declare const Deno: any;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -44,7 +48,24 @@ serve(async (req) => {
 
     console.log('Generating course for topic:', topic, 'difficulty:', difficulty);
 
-    const systemPrompt = `You are an expert educational content creator. Your task is to create a course ONLY about the specific topic provided by the user, including a final MCQ quiz.
+    // Fetch user's existing courses to see if they have taken this topic before
+    const { data: existingCourses } = await supabaseAdmin
+      .from('courses')
+      .select('title, description')
+      .eq('created_by', user.id)
+      .ilike('title', `%${topic}%`);
+
+    const hasPriorCourse = existingCourses && existingCourses.length > 0;
+
+    let previousCourseContext = "";
+    if (hasPriorCourse) {
+      previousCourseContext = `
+The user already has prior courses on this topic:
+${existingCourses.map((c: any) => `- ${c.title}`).join('\n')}
+CRITICAL CONTINUATION RULE: Do NOT start from the absolute basics or repeat the exact same curriculum. This course must act as a CONTINUATION or a deeper dive into the next logical steps for the requested difficulty ("${difficulty}").`;
+    }
+
+    const systemPrompt = `You are an expert educational content creator with a strong Computer Science background. Your task is to create a dynamic course ONLY about the specific topic provided by the user, including a final MCQ quiz.
 
 CRITICAL: The course MUST be about the EXACT topic specified. Do NOT generate content about any other subject.
 
@@ -70,23 +91,26 @@ You MUST respond with ONLY valid JSON (no markdown, no code blocks, no extra tex
     {
       "question": "A clear multiple-choice question testing knowledge from the course",
       "options": ["Option A", "Option B", "Option C", "Option D"],
-      "correct_option_index": 0 // The zero-based index of the correct option in the array
+      "correct_option_index": 0
     }
   ]
 }
 
-Guidelines:
-- For beginner: 3 modules, 2-3 lessons each, simple explanations
-- For intermediate: 4 modules, 3-4 lessons each, more depth
-- For advanced: 5 modules, 4-5 lessons each, complex topics
-- Each lesson content should be 150-300 words of plain text
-- ALL content must be specifically about the requested topic
-- Generate exactly 5 questions for the quiz that span topics from the whole course
-- DO NOT use markdown, code blocks, or special characters in content`;
+Content Generation Rules:
+1. Topic Type: Determine whether the topic is a "Programming Language/Software" or a "Theoretical Concept".
+2. Programming Language Rule: If it is a Programming Language, Module 1 MUST focus ONLY on the History and Background of the language. Module 2 should start covering the actual basics/syntax (unless it is a continuation). The final module should end with advanced applications.
+3. Theoretical Concept Rule: If it is Theory-based, structure the modules logically based on theoretical progression without forcing a history module unless relevant.
+4. Scale depth appropriately based on the requested difficulty (${difficulty}). Generate as many modules and lessons as logically required to cover the topic at this depth (do not blindly cap it at 3).
+5. Lesson content should be detailed (150-300 words of plain text) and highly informative.
+6. Generate exactly 5 questions for the quiz covering the provided material.
+7. Post-Course Suggestion: In the final lesson or description, add a subtle note encouraging the user to continue to the next difficulty level if applicable.
+8. DO NOT use markdown formatting, code blocks, or special characters inside the lesson "content" string.
+
+${previousCourseContext}`;
 
     const userPrompt = `Create a ${difficulty} level mini-course SPECIFICALLY about: "${topic}". 
 
-IMPORTANT: Every module and lesson must be about ${topic} and nothing else. The title must include "${topic}".
+IMPORTANT: Every module and lesson must be strictly about ${topic}. Ensure you follow the Content Generation Rules, specifically regarding History modules for programming languages and continuation logic if applicable.
 
 Respond with ONLY valid JSON.`;
 
