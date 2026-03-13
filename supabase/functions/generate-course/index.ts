@@ -48,10 +48,16 @@ serve(async (req: Request) => {
 
     console.log('Generating course for topic:', topic, 'difficulty:', difficulty);
 
-    // Fetch user's existing courses to see if they have taken this topic before
+    // Fetch user's existing courses and their modules to see what they already learned
     const { data: existingCourses } = await supabaseAdmin
       .from('courses')
-      .select('title, description')
+      .select(`
+        title, 
+        description,
+        modules (
+          title
+        )
+      `)
       .eq('created_by', user.id)
       .ilike('title', `%${topic}%`);
 
@@ -59,52 +65,41 @@ serve(async (req: Request) => {
 
     let previousCourseContext = "";
     if (hasPriorCourse) {
+      const priorCoursesDetails = existingCourses.map((c: any) => {
+        const moduleTitles = c.modules?.map((m: any) => m.title).join(", ") || "No modules found";
+        return `- Course Title: ${c.title}\n  Modules Already Covered in this course: ${moduleTitles}`;
+      }).join('\n\n');
+
       previousCourseContext = `
-The user already has prior courses on this topic:
-${existingCourses.map((c: any) => `- ${c.title}`).join('\n')}
-CRITICAL CONTINUATION RULE: Do NOT start from the absolute basics or repeat the exact same curriculum. This course must act as a CONTINUATION or a deeper dive into the next logical steps for the requested difficulty ("${difficulty}").`;
+CRITICAL CONTINUATION RULE:
+The user has already completed the following prior courses on this topic:
+${priorCoursesDetails}
+
+You MUST start this new "${difficulty}" course explicitly from where those previous courses left off. 
+Do NOT repeat the basics or any of the exact subjects from the "Modules Already Covered". This course MUST act as a seamless, direct continuation.`;
     }
 
     const systemPrompt = `You are an expert educational content creator with a strong Computer Science background. Your task is to create a dynamic course ONLY about the specific topic provided by the user, including a final MCQ quiz.
 
 CRITICAL: The course MUST be about the EXACT topic specified. Do NOT generate content about any other subject.
 
-You MUST respond with ONLY valid JSON (no markdown, no code blocks, no extra text). Use this exact structure:
-{
-  "title": "Course title - must include the topic name",
-  "description": "Brief course description about the specific topic (2-3 sentences)",
-  "duration_hours": number,
-  "total_lessons": number,
-  "modules": [
-    {
-      "title": "Module title - related to the topic",
-      "lessons": [
-        {
-          "title": "Lesson title - specific to the topic",
-          "content": "Detailed lesson content about the topic. Use plain text only.",
-          "duration_minutes": number
-        }
-      ]
-    }
-  ],
-  "quiz": [
-    {
-      "question": "A clear multiple-choice question testing knowledge from the course",
-      "options": ["Option A", "Option B", "Option C", "Option D"],
-      "correct_option_index": 0
-    }
-  ]
-}
+You MUST respond with valid JSON following strictly the provided JSON schema.
 
 Content Generation Rules:
-1. Topic Type: Determine whether the topic is a "Programming Language/Software" or a "Theoretical Concept".
-2. Programming Language Rule: If it is a Programming Language, Module 1 MUST focus ONLY on the History and Background of the language. Module 2 should start covering the actual basics/syntax (unless it is a continuation). The final module should end with advanced applications.
-3. Theoretical Concept Rule: If it is Theory-based, structure the modules logically based on theoretical progression without forcing a history module unless relevant.
-4. Scale depth appropriately based on the requested difficulty (${difficulty}). Generate as many modules and lessons as logically required to cover the topic at this depth (do not blindly cap it at 3).
-5. Lesson content should be detailed (150-300 words of plain text) and highly informative.
-6. Generate exactly 5 questions for the quiz covering the provided material.
-7. Post-Course Suggestion: In the final lesson or description, add a subtle note encouraging the user to continue to the next difficulty level if applicable.
-8. DO NOT use markdown formatting, code blocks, or special characters inside the lesson "content" string.
+1. Topic Type: Identify whether the topic is a "Programming Language/Software" or a "Theoretical Concept".
+2. Subject Pacing (Programming Languages):
+   - FOR BEGINNER/NEW COURSES: Module 1 MUST be strictly History & Background of the language. Module 2 MUST start the absolute basics of programming syntax. The final module should cover advanced concepts. Generate at least 3 modules.
+   - FOR INTERMEDIATE/ADVANCED COURSES: DO NOT include a History & Background module. Assume the user already knows the basics and jump straight into intermediate/advanced concepts in Module 1. Do NOT repeat beginner curriculum.
+3. Subject Pacing (Theoretical Concepts): Structure modules logically based on theoretical progression without forcing a history module unless specifically relevant.
+4. Depth & Scaling: Scale module and lesson counts dynamically based on the requested difficulty (${difficulty}) and the depth of the topic. If a topic has many sub-topics, generate as many lessons as necessary to cover them comprehensively. Do NOT arbitrarily limit the length.
+5. Content Quality: Lesson content should be highly detailed text (at least 150-300 words).
+6. Course Continuity Guidance:
+   - If the requested difficulty is Beginner, the final module/lesson MUST explicitly suggest to the user to "create an Intermediate course on this topic" next.
+   - If the requested difficulty is Intermediate, the final module/lesson MUST explicitly suggest to the user to "create an Advanced course on this topic" next.
+   - If previous courses are provided in context, this course MUST act as a continuation, diving deeper into the next logical steps for the requested difficulty ("${difficulty}").
+7. Generate exactly 5 questions for the final course quiz covering the provided material across all modules.
+8. DO NOT use markdown formatting inside the "theory" string. Format the "code" text appropriately for the language.
+9. CRITICAL CODE REQUIREMENT: For programming/technical courses, EVERY lesson that teaches a practical concept MUST include a specific code example in the "code" field. Do not leave it null unless it's purely historical/theoretical.
 
 ${previousCourseContext}`;
 
@@ -129,6 +124,89 @@ Respond with ONLY valid JSON.`;
         }],
         generationConfig: {
           responseMimeType: "application/json",
+          responseSchema: {
+            type: "object",
+            properties: {
+              title: { type: "string", description: "Course title - must include the topic name" },
+              description: { type: "string", description: "Brief course description about the specific topic (2-3 sentences)" },
+              duration_hours: { type: "number" },
+              total_lessons: { type: "number" },
+              modules: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    title: { type: "string", description: "Module title - related to the topic" },
+                    module_quiz: {
+                      type: "object",
+                      description: "A quiz at the end of the module testing the knowledge from this module's lessons",
+                      properties: {
+                        question: { type: "string", description: "The multiple-choice question" },
+                        options: {
+                          type: "array",
+                          items: { type: "string" },
+                          description: "Exactly 4 options"
+                        },
+                        correct_option_index: { type: "number", description: "Index of the correct option (0-3)" },
+                        explanation: { type: "string", description: "Detailed explanation of why the correct option is correct and why others might be wrong" }
+                      },
+                      required: ["question", "options", "correct_option_index", "explanation"]
+                    },
+                    lessons: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          title: { type: "string", description: "Lesson title - specific to the topic" },
+                          content: {
+                            type: "object",
+                            properties: {
+                              theory: { type: "string", description: "Detailed lesson theory explaining the concept. Plain text." },
+                              code: { type: "string", description: "A relevant, specific coding example illustrating the lesson. This MUST NOT BE EMPTY for programming/technical topics." },
+                              mcq: {
+                                type: "object",
+                                properties: {
+                                  question: { type: "string", description: "A simple multiple-choice question testing the knowledge from this lesson" },
+                                  options: {
+                                    type: "array",
+                                    items: { type: "string" },
+                                    description: "Exactly 4 options"
+                                  },
+                                  correct_option_index: { type: "number", description: "Index of the correct option (0-3)" }
+                                },
+                                required: ["question", "options", "correct_option_index"]
+                              }
+                            },
+                            required: ["theory", "code", "mcq"]
+                          },
+                          duration_minutes: { type: "number" }
+                        },
+                        required: ["title", "content", "duration_minutes"]
+                      }
+                    }
+                  },
+                  required: ["title", "lessons", "module_quiz"]
+                }
+              },
+              quiz: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    question: { type: "string", description: "A clear multiple-choice question testing knowledge from the course" },
+                    options: {
+                      type: "array",
+                      items: { type: "string" },
+                      description: "Exactly 4 options"
+                    },
+                    correct_option_index: { type: "number" }
+                  },
+                  required: ["question", "options", "correct_option_index"]
+                }
+              }
+            },
+            required: ["title", "description", "duration_hours", "total_lessons", "modules", "quiz"]
+          }
         }
       }),
     });
@@ -197,7 +275,7 @@ Respond with ONLY valid JSON.`;
         title: courseData.title,
         description: courseData.description,
         duration_hours: courseData.duration_hours || 1,
-        total_lessons: courseData.total_lessons || courseData.modules?.reduce((acc: number, m: any) => acc + (m.lessons?.length || 0), 0) || 5,
+        total_lessons: courseData.total_lessons || courseData.modules?.reduce((acc: number, m: any) => acc + (m.lessons?.length || 0) + (m.module_quiz ? 1 : 0), 0) || 5,
         category_id: categoryId,
         created_by: user.id,
         image_url: `https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=300&fit=crop`
@@ -250,13 +328,32 @@ Respond with ONLY valid JSON.`;
             .insert({
               module_id: insertedModule.id,
               title: lessonData.title,
-              content: lessonData.content || '',
+              content: typeof lessonData.content === 'object' ? JSON.stringify(lessonData.content) : (lessonData.content || ''),
               duration_minutes: lessonData.duration_minutes || 5,
               order_index: lIndex
             });
 
           if (lessonError) {
             console.error('Failed to save lesson:', lessonError);
+          }
+        }
+
+        if (moduleData.module_quiz) {
+          const { error: quizError } = await supabaseAdmin
+            .from('lessons')
+            .insert({
+              module_id: insertedModule.id,
+              title: "Module Quiz",
+              content: JSON.stringify({
+                is_module_quiz: true,
+                quiz: moduleData.module_quiz
+              }),
+              duration_minutes: 5, // typical duration for a short quiz
+              order_index: moduleData.lessons.length
+            });
+
+          if (quizError) {
+            console.error('Failed to save module quiz lesson:', quizError);
           }
         }
       }
