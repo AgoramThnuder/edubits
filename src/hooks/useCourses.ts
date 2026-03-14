@@ -234,7 +234,9 @@ export const useDeleteCourse = () => {
 
       // 1. Delete user enrollments & global activity history to reset dashboard
       await supabase.from("user_enrollments").delete().eq("course_id", courseId);
-      await supabase.from("user_activity").delete().eq("user_id", user.id);
+      await supabase.functions.invoke("wipe-activity", {
+        body: {},
+      }).catch(err => console.error("Optional activity wipe failed", err));
       
       // 2. Delete lesson completions
       await supabase.from("lesson_completions").delete().eq("course_id", courseId);
