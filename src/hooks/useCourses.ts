@@ -232,13 +232,29 @@ export const useDeleteCourse = () => {
     mutationFn: async (courseId: string) => {
       if (!user) throw new Error("Not authenticated");
 
-      // First delete related enrollments
-      await supabase
-        .from("user_enrollments")
-        .delete()
-        .eq("course_id", courseId);
+      // 1. Delete user enrollments
+      await supabase.from("user_enrollments").delete().eq("course_id", courseId);
+      
+      // 2. Delete lesson completions
+      await supabase.from("lesson_completions").delete().eq("course_id", courseId);
 
-      // Then delete the course
+      // 3. Handle quiz deletion flow
+      const { data: quiz } = await supabase.from("quizzes").select("id").eq("course_id", courseId).single();
+      if (quiz) {
+        await supabase.from("quiz_completions").delete().eq("quiz_id", quiz.id);
+        await supabase.from("quiz_questions").delete().eq("quiz_id", quiz.id);
+        await supabase.from("quizzes").delete().eq("id", quiz.id);
+      }
+
+      // 4. Handle modules and lessons deletion flow
+      const { data: modules } = await supabase.from("modules").select("id").eq("course_id", courseId);
+      if (modules && modules.length > 0) {
+        const moduleIds = modules.map(m => m.id);
+        await supabase.from("lessons").delete().in("module_id", moduleIds);
+        await supabase.from("modules").delete().eq("course_id", courseId);
+      }
+
+      // 5. Finally delete the course
       const { data, error } = await supabase
         .from("courses")
         .delete()
