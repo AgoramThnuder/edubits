@@ -232,8 +232,9 @@ export const useDeleteCourse = () => {
     mutationFn: async (courseId: string) => {
       if (!user) throw new Error("Not authenticated");
 
-      // 1. Delete user enrollments
+      // 1. Delete user enrollments & global activity history to reset dashboard
       await supabase.from("user_enrollments").delete().eq("course_id", courseId);
+      await supabase.from("user_activity").delete().eq("user_id", user.id);
       
       // 2. Delete lesson completions
       await supabase.from("lesson_completions").delete().eq("course_id", courseId);
@@ -270,6 +271,7 @@ export const useDeleteCourse = () => {
       queryClient.invalidateQueries({ queryKey: ["courses"] });
       queryClient.invalidateQueries({ queryKey: ["enrollments"] });
       queryClient.invalidateQueries({ queryKey: ["recent-courses"] });
+      queryClient.invalidateQueries({ queryKey: ["user-activity"] });
     },
   });
 };
