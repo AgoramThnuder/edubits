@@ -62,6 +62,29 @@ serve(async (req: Request) => {
       .ilike('title', `%${topic}%`);
 
     const hasPriorCourse = existingCourses && existingCourses.length > 0;
+    
+    // Duplicate & Chaining Logic
+    let isChainingSameDifficulty = false;
+    let chainCount = 0;
+
+    if (hasPriorCourse) {
+      // Find courses with the exact SAME topic AND difficulty in the title
+      const sameDifficultyCourses = existingCourses.filter((c: any) => 
+        c.title.toLowerCase().includes(topic.toLowerCase()) && 
+        c.title.toLowerCase().includes(difficulty.toLowerCase())
+      );
+
+      if (sameDifficultyCourses.length > 0) {
+        if (difficulty.toLowerCase() === 'beginner') {
+          // Block identical beginner courses outright
+          throw new Error(`You already have a Beginner course on ${topic}! Please generate an Intermediate course to continue learning.`);
+        } else {
+          // Allow infinite chaining for Intermediate/Advanced
+          isChainingSameDifficulty = true;
+          chainCount = sameDifficultyCourses.length + 1;
+        }
+      }
+    }
 
     let previousCourseContext = "";
     if (hasPriorCourse) {
@@ -70,13 +93,16 @@ serve(async (req: Request) => {
         return `- Course Title: ${c.title}\n  Modules Already Covered in this course: ${moduleTitles}`;
       }).join('\n\n');
 
+
       previousCourseContext = `
 CRITICAL CONTINUATION RULE:
 The user has already completed the following prior courses on this topic:
 ${priorCoursesDetails}
 
-You MUST start this new "${difficulty}" course explicitly from where those previous courses left off. 
-Do NOT repeat the basics or any of the exact subjects from the "Modules Already Covered". This course MUST act as a seamless, direct continuation.`;
+${isChainingSameDifficulty 
+  ? `IMPORTANT: The user is generating ANOTHER "${difficulty}" level course. You MUST act as "Part ${chainCount}" of this difficulty! DO NOT repeat the exact subjects from the "Modules Already Covered" above. You must dive into completely NEW concepts at the ${difficulty} tier.`
+  : `You MUST start this new "${difficulty}" course explicitly from where those previous courses left off. Do NOT repeat the basics or any of the exact subjects from the "Modules Already Covered". This course MUST act as a seamless, direct continuation.`
+}`;
     }
 
     const systemPrompt = `You are an expert educational content creator with a strong Computer Science background. Your task is to create a dynamic course ONLY about the specific topic provided by the user, including a final MCQ quiz.
@@ -88,18 +114,21 @@ You MUST respond with valid JSON following strictly the provided JSON schema.
 Content Generation Rules:
 1. Topic Type: Identify whether the topic is a "Programming Language/Software" or a "Theoretical Concept".
 2. Subject Pacing (Programming Languages):
-   - FOR BEGINNER/NEW COURSES: Module 1 MUST be strictly History & Background of the language. Module 2 MUST start the absolute basics of programming syntax. The final module should cover advanced concepts. Generate at least 3 modules.
-   - FOR INTERMEDIATE/ADVANCED COURSES: DO NOT include a History & Background module. Assume the user already knows the basics and jump straight into intermediate/advanced concepts in Module 1. Do NOT repeat beginner curriculum.
+   - FOR ALL NEW COURSES (Beginner, Intermediate, Advanced): Module 1 MUST be exclusively the History & Background of the language. Module 2 MUST always start the absolute basics of programming syntax.
+   - EXCEPTION (Continuations): If the user is generating a course and prior courses are provided in the context below, DO NOT generate a History or Basics module (unless explicitly chaining a sequence). You must completely skip them and instantly pick up where the previous course left off.
 3. Subject Pacing (Theoretical Concepts): Structure modules logically based on theoretical progression without forcing a history module unless specifically relevant.
-4. Depth & Scaling: Scale module and lesson counts dynamically based on the requested difficulty (${difficulty}) and the depth of the topic. If a topic has many sub-topics, generate as many lessons as necessary to cover them comprehensively. Do NOT arbitrarily limit the length.
+4. Depth & Scaling (CRITICAL): You must generate lessons and modules based on the requested difficulty (${difficulty}):
+   - Beginner: Generate approximately 3 modules (History, Basics, and Simple Applications).
+   - Intermediate: Generate 5 to 6 modules (History, Basics, and extending into Intermediate Applications).
+   - Advanced: Generate up to a maximum of 8 modules (History, Basics, and extending deep into Advanced Applications).
 5. Content Quality: Lesson content should be highly detailed text (at least 150-300 words).
-6. Course Continuity Guidance:
-   - If the requested difficulty is Beginner, the final module/lesson MUST explicitly suggest to the user to "create an Intermediate course on this topic" next.
-   - If the requested difficulty is Intermediate, the final module/lesson MUST explicitly suggest to the user to "create an Advanced course on this topic" next.
-   - If previous courses are provided in context, this course MUST act as a continuation, diving deeper into the next logical steps for the requested difficulty ("${difficulty}").
+6. Course Continuity Suggestion:
+   - If the requested difficulty is Beginner, the final module/lesson MUST explicitly suggest to the user to "Click the Generate Intermediate Course button" next to continue learning.
+   - If the requested difficulty is Intermediate, the final module/lesson MUST explicitly suggest to the user to "Click the Generate Advanced Course button" next.
 7. Generate exactly 5 questions for the final course quiz covering the provided material across all modules.
 8. DO NOT use markdown formatting inside the "theory" string. Format the "code" text appropriately for the language.
 9. CRITICAL CODE REQUIREMENT: For programming/technical courses, EVERY lesson that teaches a practical concept MUST include a specific code example in the "code" field. Do not leave it null unless it's purely historical/theoretical.
+10. MODULE QUIZZES: At the end of EVERY single module, you MUST generate exactly 1 'module_quiz' testing the user exclusively on the material covered in that specific module. Do not skip this!
 
 ${previousCourseContext}`;
 
@@ -269,10 +298,16 @@ Respond with ONLY valid JSON.`;
     }
 
     // Insert course into database
+    let finalTitle = courseData.title;
+    if (isChainingSameDifficulty) {
+      // e.g. "Advanced Python (Part 2)"
+      finalTitle = `${finalTitle.replace(/\(Part \d+\)/gi, '').trim()} (Part ${chainCount})`;
+    }
+
     const { data: course, error: courseError } = await supabaseAdmin
       .from('courses')
       .insert({
-        title: courseData.title,
+        title: finalTitle,
         description: courseData.description,
         duration_hours: courseData.duration_hours || 1,
         total_lessons: courseData.total_lessons || courseData.modules?.reduce((acc: number, m: any) => acc + (m.lessons?.length || 0) + (m.module_quiz ? 1 : 0), 0) || 5,
