@@ -14,6 +14,7 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import LessonContent from "@/components/course/LessonContent";
 import CourseChatbot from "@/components/course/CourseChatbot";
 import CourseQuiz from "@/components/course/CourseQuiz";
+import CreateCourseModal from "@/components/dashboard/CreateCourseModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLogActivity } from "@/hooks/useActivity";
 import { useCourseDetails } from "@/hooks/useCourseDetails";
@@ -29,6 +30,8 @@ const CoursePage = () => {
   const [isTakingQuiz, setIsTakingQuiz] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [nextCourseInfo, setNextCourseInfo] = useState({ topic: "", difficulty: "beginner" });
 
   const logActivity = useLogActivity();
   const startTimeRef = useRef<number>(Date.now());
@@ -108,6 +111,33 @@ const CoursePage = () => {
         setExpandedModules(prev => [...prev, module.id]);
       }
     }
+  };
+
+  const handleGenerateNextCourse = () => {
+    if (!course) return;
+    
+    // Attempt to guess the previous topic and next difficulty
+    let nextDiff = "beginner";
+    let baseTopic = course.title;
+    
+    const lowerTitle = course.title.toLowerCase();
+    if (lowerTitle.includes("beginner")) {
+      nextDiff = "intermediate";
+      baseTopic = course.title.replace(/beginner/i, "").trim();
+    } else if (lowerTitle.includes("intermediate")) {
+      nextDiff = "advanced";
+      baseTopic = course.title.replace(/intermediate/i, "").trim();
+    } else if (lowerTitle.includes("advanced")) {
+       // if they finished advanced, maybe let them pick a new topic or difficulty freely
+      nextDiff = "advanced";
+      baseTopic = course.title.replace(/advanced/i, "").trim();
+    }
+    
+    // Clean up trailing dashes or colons
+    baseTopic = baseTopic.replace(/^[-:\s]+|[-:\s]+$/g, "");
+
+    setNextCourseInfo({ topic: baseTopic, difficulty: nextDiff });
+    setIsCreateModalOpen(true);
   };
 
   // Loading state
@@ -191,12 +221,16 @@ const CoursePage = () => {
                         : "text-muted-foreground hover:bg-sidebar-accent/50"
                         }`}
                     >
-                      {lesson.completed ? (
+                      {lesson.title === "Module Quiz" ? (
+                         <div className="w-4 h-4 shrink-0 flex items-center justify-center bg-primary/20 rounded-full">
+                           <span className="text-[10px] select-none text-primary font-bold">?</span>
+                         </div>
+                      ) : lesson.completed ? (
                         <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
                       ) : (
                         <Circle className="w-4 h-4 shrink-0" />
                       )}
-                      <span className="line-clamp-1">{lesson.title}</span>
+                      <span className={`line-clamp-1 ${lesson.title === "Module Quiz" ? "text-primary font-medium" : ""}`}>{lesson.title}</span>
                     </button>
                   ))}
                 </div>
@@ -243,6 +277,7 @@ const CoursePage = () => {
               // Note: Normally we would record this completion to the DB here
               console.log("Quiz finished with score", score, "/", total);
             }}
+            onGenerateNextCourse={handleGenerateNextCourse}
           />
         ) : (
           <LessonContent
@@ -268,6 +303,14 @@ const CoursePage = () => {
             lesson: currentLesson?.title,
             lessonContent: currentLesson?.content,
           }}
+        />
+
+        {/* Generate Next Course Modal */}
+        <CreateCourseModal 
+          isOpen={isCreateModalOpen} 
+          onClose={() => setIsCreateModalOpen(false)} 
+          initialTopic={nextCourseInfo.topic}
+          initialDifficulty={nextCourseInfo.difficulty}
         />
       </main>
     </div>

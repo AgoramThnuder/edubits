@@ -11,6 +11,8 @@ import { supabase } from "@/integrations/supabase/client";
 interface CreateCourseModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialTopic?: string;
+  initialDifficulty?: string;
 }
 
 const difficulties = [
@@ -19,9 +21,9 @@ const difficulties = [
   { value: "advanced", label: "Advanced", description: "Deep understanding" },
 ];
 
-const CreateCourseModal = ({ isOpen, onClose }: CreateCourseModalProps) => {
-  const [topic, setTopic] = useState("");
-  const [difficulty, setDifficulty] = useState("beginner");
+const CreateCourseModal = ({ isOpen, onClose, initialTopic = "", initialDifficulty = "beginner" }: CreateCourseModalProps) => {
+  const [topic, setTopic] = useState(initialTopic);
+  const [difficulty, setDifficulty] = useState(initialDifficulty);
   const [isGenerating, setIsGenerating] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -63,8 +65,8 @@ const CreateCourseModal = ({ isOpen, onClose }: CreateCourseModalProps) => {
       });
 
       onClose();
-      setTopic("");
-      setDifficulty("beginner");
+      setTopic(initialTopic);
+      setDifficulty(initialDifficulty);
 
       if (data?.course?.id) {
         navigate(`/course/${data.course.id}`);

@@ -8,9 +8,10 @@ interface CourseQuizProps {
     quiz: Quiz;
     onToggleSidebar: () => void;
     onFinish?: (score: number, total: number) => void;
+    onGenerateNextCourse?: () => void;
 }
 
-const CourseQuiz = ({ quiz, onToggleSidebar, onFinish }: CourseQuizProps) => {
+const CourseQuiz = ({ quiz, onToggleSidebar, onFinish, onGenerateNextCourse }: CourseQuizProps) => {
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [selectedOption, setSelectedOption] = useState<number | null>(null);
     const [isAnswerRevealed, setIsAnswerRevealed] = useState(false);
@@ -122,6 +123,13 @@ const CourseQuiz = ({ quiz, onToggleSidebar, onFinish }: CourseQuizProps) => {
                             <RotateCcw className="w-4 h-4" />
                             Retake Quiz
                         </Button>
+                        
+                        {passed && onGenerateNextCourse && (
+                            <Button onClick={onGenerateNextCourse} className="w-full gap-2 mt-4" variant="default" size="lg">
+                                <Trophy className="w-4 h-4" />
+                                Continue Learning: Generate Next Level Course
+                            </Button>
+                        )}
                     </motion.div>
                 </div>
             </div>
