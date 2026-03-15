@@ -6,7 +6,6 @@ import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCourses, useUserEnrollments, useEnrollInCourse, useCategories, useDeleteCourse } from "@/hooks/useCourses";
-import NotificationsDropdown from "@/components/dashboard/NotificationsDropdown";
 import AccountDropdown from "@/components/dashboard/AccountDropdown";
 import CreateCourseModal from "@/components/dashboard/CreateCourseModal";
 import { Button } from "@/components/ui/button";
@@ -154,7 +153,6 @@ const CoursesPage = () => {
 
             {/* Right side */}
             <div className="flex items-center gap-3">
-              <NotificationsDropdown />
               <AccountDropdown />
             </div>
           </div>

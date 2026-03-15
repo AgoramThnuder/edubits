@@ -8,7 +8,6 @@ import ProgressStats from "@/components/dashboard/ProgressStats";
 import FeaturedCourse from "@/components/dashboard/FeaturedCourse";
 import TopicsList from "@/components/dashboard/TopicsList";
 import ScheduleSection from "@/components/dashboard/ScheduleSection";
-import NotificationsDropdown from "@/components/dashboard/NotificationsDropdown";
 import AccountDropdown from "@/components/dashboard/AccountDropdown";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -71,7 +70,6 @@ const Dashboard = () => {
 
             {/* Right side */}
             <div className="flex items-center gap-3">
-              <NotificationsDropdown />
               <AccountDropdown />
             </div>
           </div>
