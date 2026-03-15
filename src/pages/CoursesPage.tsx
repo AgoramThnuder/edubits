@@ -84,6 +84,7 @@ const CoursesPage = () => {
   const filteredCourses = useMemo(() => {
     return courses.filter((course) => {
       const matchesSearch =
+        !searchQuery ||
         course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (course.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
       const matchesCategory = selectedCategory === "All" || course.categories?.name === selectedCategory;
@@ -173,7 +174,7 @@ const CoursesPage = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Search courses..."
+              placeholder="Search courses and press Enter..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 pr-10"
@@ -203,7 +204,6 @@ const CoursesPage = () => {
           </div>
         </div>
 
-        {/* Results count */}
         <p className="text-sm text-muted-foreground mb-4">
           {filteredCourses.length} {filteredCourses.length === 1 ? "course" : "courses"} found
         </p>
@@ -227,7 +227,8 @@ const CoursesPage = () => {
 
             {/* Course Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Create Course Card - Always First */}
+              {/* Create Course Card — hidden while searching */}
+              {!searchQuery && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -251,6 +252,7 @@ const CoursesPage = () => {
                   </Button>
                 </div>
               </motion.div>
+              )}
 
               {filteredCourses.map((course, index) => {
                 const isEnrolled = enrolledCourseIds.has(course.id);
@@ -279,8 +281,8 @@ const CoursesPage = () => {
                             {course.categories?.name || "General"}
                           </span>
                         </div>
-                        {/* Delete button - always show */}
-                        {true && (
+                        {/* Delete button - only show for course owner */}
+                        {course.created_by === user.id && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <button

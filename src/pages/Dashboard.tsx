@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, BookOpen, Loader2 } from "lucide-react";
+import { BookOpen, Loader2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import CreateCourseModal from "@/components/dashboard/CreateCourseModal";
 import ActivityChart from "@/components/dashboard/ActivityChart";
@@ -8,7 +8,6 @@ import ProgressStats from "@/components/dashboard/ProgressStats";
 import FeaturedCourse from "@/components/dashboard/FeaturedCourse";
 import TopicsList from "@/components/dashboard/TopicsList";
 import ScheduleSection from "@/components/dashboard/ScheduleSection";
-import SearchModal from "@/components/dashboard/SearchModal";
 import NotificationsDropdown from "@/components/dashboard/NotificationsDropdown";
 import AccountDropdown from "@/components/dashboard/AccountDropdown";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,7 +19,6 @@ const navItems = [
 
 const Dashboard = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { user, loading } = useAuth();
   const navigate = useNavigate();
 
@@ -73,12 +71,6 @@ const Dashboard = () => {
 
             {/* Right side */}
             <div className="flex items-center gap-3">
-              <button 
-                onClick={() => setIsSearchOpen(true)}
-                className="p-2.5 rounded-xl hover:bg-secondary transition-colors"
-              >
-                <Search className="w-5 h-5 text-muted-foreground" />
-              </button>
               <NotificationsDropdown />
               <AccountDropdown />
             </div>
@@ -144,11 +136,6 @@ const Dashboard = () => {
       <CreateCourseModal 
         isOpen={isCreateModalOpen} 
         onClose={() => setIsCreateModalOpen(false)} 
-      />
-      
-      <SearchModal 
-        isOpen={isSearchOpen} 
-        onClose={() => setIsSearchOpen(false)} 
       />
     </div>
   );

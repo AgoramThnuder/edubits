@@ -31,9 +31,13 @@ export interface UserEnrollment {
 }
 
 export const useCourses = () => {
+  const { user } = useAuth();
+
   return useQuery({
-    queryKey: ["courses"],
+    queryKey: ["courses", user?.id],
     queryFn: async () => {
+      if (!user) return [];
+
       const { data, error } = await supabase
         .from("courses")
         .select(`
@@ -44,11 +48,13 @@ export const useCourses = () => {
             color
           )
         `)
+        .eq("created_by", user.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
       return data as Course[];
     },
+    enabled: !!user,
   });
 };
 
