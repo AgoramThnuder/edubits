@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import LessonContent from "@/components/course/LessonContent";
-import CourseChatbot from "@/components/course/CourseChatbot";
+import CourseChatbot, { Message } from "@/components/course/CourseChatbot";
 import CourseQuiz from "@/components/course/CourseQuiz";
 import CreateCourseModal from "@/components/dashboard/CreateCourseModal";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,6 +32,26 @@ const CoursePage = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [nextCourseInfo, setNextCourseInfo] = useState({ topic: "", difficulty: "beginner" });
+
+  // Store chat messages keyed by lesson ID — load from localStorage so history survives page reloads
+  const STORAGE_KEY = `chat_histories_${courseId}`;
+  const [chatHistories, setChatHistories] = useState<Record<string, Message[]>>(() => {
+    try {
+      const stored = localStorage.getItem(`chat_histories_${courseId}`);
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  // Persist chatHistories to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(chatHistories));
+    } catch {
+      // ignore storage errors (e.g. private mode quota exceeded)
+    }
+  }, [chatHistories, STORAGE_KEY]);
 
   const logActivity = useLogActivity();
   const startTimeRef = useRef<number>(Date.now());
@@ -295,15 +315,50 @@ const CoursePage = () => {
         )}
 
         {/* Chatbot panel */}
-        <CourseChatbot
-          isOpen={isChatOpen}
-          onClose={() => setIsChatOpen(false)}
-          context={{
-            course: course.title,
-            lesson: currentLesson?.title,
-            lessonContent: currentLesson?.content,
-          }}
-        />
+        {(() => {
+          const contextKey = currentLesson?.id || "course";
+          const currentMessages = chatHistories[contextKey] || [
+            {
+              id: "1",
+              role: "assistant",
+              content: `I'm here to help you understand "${currentLesson?.title || course.title}". What would you like to know?`,
+            },
+          ];
+
+          return (
+            <CourseChatbot
+              isOpen={isChatOpen}
+              onClose={() => setIsChatOpen(false)}
+              context={{
+                course: course.title,
+                lesson: currentLesson?.title,
+                lessonContent: currentLesson?.content,
+              }}
+              messages={currentMessages}
+              setMessages={(newMessages) => {
+                setChatHistories(prev => {
+                  const currentHistory = prev[contextKey] || [
+                    {
+                      id: "1",
+                      role: "assistant",
+                      content: `I'm here to help you understand "${currentLesson?.title || course.title}". What would you like to know?`,
+                    },
+                  ];
+                  
+                  // If it's a function (like prev => [...prev, newMsg]), pass the specific array
+                  const updatedHistory = typeof newMessages === 'function' 
+                    ? newMessages(currentHistory) 
+                    : newMessages;
+                    
+                  return {
+                    ...prev,
+                    [contextKey]: updatedHistory
+                  };
+                });
+              }}
+            />
+          );
+        })()}
 
         {/* Generate Next Course Modal */}
         <CreateCourseModal 

@@ -5,6 +5,68 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 
+/** Lightweight inline markdown renderer – no external dependencies needed */
+function renderMarkdown(text: string) {
+  // Split into lines and process each
+  const lines = text.split("\n");
+  const elements: React.ReactNode[] = [];
+
+  lines.forEach((line, lineIdx) => {
+    // Heading 3
+    if (line.startsWith("### ")) {
+      elements.push(<p key={lineIdx} className="font-bold text-base mt-2 mb-1">{parseLine(line.slice(4))}</p>);
+    // Heading 2
+    } else if (line.startsWith("## ")) {
+      elements.push(<p key={lineIdx} className="font-bold text-base mt-2 mb-1">{parseLine(line.slice(3))}</p>);
+    // Heading 1
+    } else if (line.startsWith("# ")) {
+      elements.push(<p key={lineIdx} className="font-bold text-base mt-2 mb-1">{parseLine(line.slice(2))}</p>);
+    // Bullet list
+    } else if (line.startsWith("- ") || line.startsWith("* ")) {
+      elements.push(<li key={lineIdx} className="ml-4 list-disc">{parseLine(line.slice(2))}</li>);
+    // Numbered list
+    } else if (/^\d+\. /.test(line)) {
+      elements.push(<li key={lineIdx} className="ml-4 list-decimal">{parseLine(line.replace(/^\d+\. /, ""))}</li>);
+    // Empty line — add spacing
+    } else if (line.trim() === "") {
+      elements.push(<br key={lineIdx} />);
+    // Normal paragraph
+    } else {
+      elements.push(<p key={lineIdx} className="mb-1">{parseLine(line)}</p>);
+    }
+  });
+
+  return <>{elements}</>;
+}
+
+/** Parse inline tokens: **bold**, *italic*, `code` */
+function parseLine(text: string): React.ReactNode {
+  const parts: React.ReactNode[] = [];
+  const regex = /(\*\*([^*]+)\*\*|\*([^*]+)\*|`([^`]+)`)/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    if (match[2]) {
+      parts.push(<strong key={match.index}>{match[2]}</strong>);
+    } else if (match[3]) {
+      parts.push(<em key={match.index}>{match[3]}</em>);
+    } else if (match[4]) {
+      parts.push(<code key={match.index} className="bg-black/20 rounded px-1 font-mono text-xs">{match[4]}</code>);
+    }
+    lastIndex = regex.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : text;
+}
+
 interface CourseChatbotProps {
   isOpen: boolean;
   onClose: () => void;
@@ -13,9 +75,11 @@ interface CourseChatbotProps {
     lesson: string | undefined;
     lessonContent?: string;
   };
+  messages: Message[];
+  setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
 }
 
-interface Message {
+export interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
@@ -23,14 +87,7 @@ interface Message {
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/course-chat`;
 
-const CourseChatbot = forwardRef<HTMLDivElement, CourseChatbotProps>(({ isOpen, onClose, context }, ref) => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      role: "assistant",
-      content: `I'm here to help you understand "${context.lesson || context.course}". What would you like to know?`,
-    },
-  ]);
+const CourseChatbot = forwardRef<HTMLDivElement, CourseChatbotProps>(({ isOpen, onClose, context, messages, setMessages }, ref) => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -43,16 +100,8 @@ const CourseChatbot = forwardRef<HTMLDivElement, CourseChatbotProps>(({ isOpen, 
     scrollToBottom();
   }, [messages]);
 
-  // Reset messages when context changes
-  useEffect(() => {
-    setMessages([
-      {
-        id: "1",
-        role: "assistant",
-        content: `I'm here to help you understand "${context.lesson || context.course}". What would you like to know?`,
-      },
-    ]);
-  }, [context.lesson, context.course]);
+  // We removed the useEffect that resets messages on context change.
+  // The parent component will now pass down the correct messages array for the current context.
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,7 +163,9 @@ const CourseChatbot = forwardRef<HTMLDivElement, CourseChatbotProps>(({ isOpen, 
 
       // Create initial assistant message
       const assistantId = (Date.now() + 1).toString();
-      setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "" }]);
+      const initialAssistantMsg: Message = { id: assistantId, role: "assistant", content: "" };
+      
+      setMessages((prev) => [...prev, initialAssistantMsg]);
 
       while (!streamDone) {
         const { done, value } = await reader.read();
@@ -123,34 +174,35 @@ const CourseChatbot = forwardRef<HTMLDivElement, CourseChatbotProps>(({ isOpen, 
 
         let newlineIndex: number;
         while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
-          let line = textBuffer.slice(0, newlineIndex);
-          textBuffer = textBuffer.slice(newlineIndex + 1);
+           let line = textBuffer.slice(0, newlineIndex);
+           textBuffer = textBuffer.slice(newlineIndex + 1);
 
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (line.startsWith(":") || line.trim() === "") continue;
-          if (!line.startsWith("data: ")) continue;
+           if (line.endsWith("\r")) line = line.slice(0, -1);
+           if (line.startsWith(":") || line.trim() === "") continue;
+           if (!line.startsWith("data: ")) continue;
 
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") {
-            streamDone = true;
-            break;
-          }
+           const jsonStr = line.slice(6).trim();
+           if (jsonStr === "[DONE]") {
+             streamDone = true;
+             break;
+           }
 
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.candidates?.[0]?.content?.parts?.[0]?.text as string | undefined;
-            if (content) {
-              assistantContent += content;
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.id === assistantId ? { ...m, content: assistantContent } : m
-                )
-              );
-            }
-          } catch {
-            textBuffer = line + "\n" + textBuffer;
-            break;
-          }
+           try {
+             const parsed = JSON.parse(jsonStr);
+             const content = parsed.candidates?.[0]?.content?.parts?.[0]?.text as string | undefined;
+             if (content) {
+               assistantContent += content;
+               // Important: pass a new reference and ensure we only map over the LATEST messages
+               setMessages((prev) => {
+                 return prev.map((m) =>
+                   m.id === assistantId ? { ...m, content: assistantContent } : m
+                 );
+               });
+             }
+           } catch {
+             textBuffer = line + "\n" + textBuffer;
+             break;
+           }
         }
       }
 
@@ -247,9 +299,15 @@ const CourseChatbot = forwardRef<HTMLDivElement, CourseChatbotProps>(({ isOpen, 
                     : "bg-muted text-foreground"
                     }`}
                 >
-                  <p className="text-sm whitespace-pre-wrap leading-relaxed">
-                    {message.content || (isLoading && message.role === "assistant" ? "..." : "")}
-                  </p>
+                  {message.role === "user" ? (
+                    <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                      {message.content}
+                    </p>
+                  ) : (
+                    <div className="text-sm leading-relaxed space-y-1">
+                      {renderMarkdown(message.content || (isLoading ? "..." : ""))}
+                    </div>
+                  )}
                 </div>
               </motion.div>
             ))}
