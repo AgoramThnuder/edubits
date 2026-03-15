@@ -18,12 +18,30 @@ import CreateCourseModal from "@/components/dashboard/CreateCourseModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLogActivity } from "@/hooks/useActivity";
 import { useCourseDetails } from "@/hooks/useCourseDetails";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const CoursePage = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { data: course, isLoading: courseLoading } = useCourseDetails(courseId);
+
+  // Fetch final quiz completion for this course
+  const { data: quizCompletion } = useQuery({
+    queryKey: ["quiz-completion", courseId, user?.id],
+    queryFn: async () => {
+      if (!user || !courseId) return null;
+      const { data: quiz } = await supabase
+        .from("quizzes").select("id").eq("course_id", courseId).single();
+      if (!quiz) return null;
+      const { data } = await supabase
+        .from("quiz_completions").select("score, total_questions")
+        .eq("user_id", user.id).eq("quiz_id", quiz.id).single();
+      return data ?? null;
+    },
+    enabled: !!user && !!courseId,
+  });
 
   const [expandedModules, setExpandedModules] = useState<string[]>([]);
   const [activeLesson, setActiveLesson] = useState<string | null>(null);
@@ -293,9 +311,19 @@ const CoursePage = () => {
           <CourseQuiz
             quiz={course.quiz}
             onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
-            onFinish={(score, total) => {
-              // Note: Normally we would record this completion to the DB here
-              console.log("Quiz finished with score", score, "/", total);
+            previousCompletion={quizCompletion}
+          onFinish={async (score, total) => {
+              // Save quiz score to Supabase
+              const { supabase } = await import("@/integrations/supabase/client");
+              if (user && course.quiz) {
+                await supabase.from("quiz_completions").upsert({
+                  user_id: user.id,
+                  quiz_id: course.quiz.id,
+                  score,
+                  total_questions: total,
+                  completed_at: new Date().toISOString(),
+                }, { onConflict: "user_id,quiz_id" });
+              }
             }}
             onGenerateNextCourse={handleGenerateNextCourse}
           />

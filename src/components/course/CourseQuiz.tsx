@@ -9,14 +9,17 @@ interface CourseQuizProps {
     onToggleSidebar: () => void;
     onFinish?: (score: number, total: number) => void;
     onGenerateNextCourse?: () => void;
+    previousCompletion?: { score: number; total_questions: number } | null;
 }
 
-const CourseQuiz = ({ quiz, onToggleSidebar, onFinish, onGenerateNextCourse }: CourseQuizProps) => {
+const CourseQuiz = ({ quiz, onToggleSidebar, onFinish, onGenerateNextCourse, previousCompletion }: CourseQuizProps) => {
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [selectedOption, setSelectedOption] = useState<number | null>(null);
     const [isAnswerRevealed, setIsAnswerRevealed] = useState(false);
-    const [score, setScore] = useState(0);
-    const [isFinished, setIsFinished] = useState(false);
+    // Init score and finished state from previous completion if available
+    const [score, setScore] = useState(previousCompletion?.score ?? 0);
+    const [isFinished, setIsFinished] = useState(!!previousCompletion);
+    const [isInitiallyCompleted] = useState(!!previousCompletion);
 
     // If no questions, we shouldn't really be here, but handle gracefully
     if (!quiz.questions || quiz.questions.length === 0) {
@@ -54,7 +57,8 @@ const CourseQuiz = ({ quiz, onToggleSidebar, onFinish, onGenerateNextCourse }: C
         } else {
             setIsFinished(true);
             if (onFinish) {
-                onFinish(score + (selectedOption === currentQuestion.correct_option_index ? 1 : 0), quiz.questions.length);
+                // score is already updated by handleCheckAnswer for every question including the last
+                onFinish(score, quiz.questions.length);
             }
         }
     };
@@ -95,6 +99,11 @@ const CourseQuiz = ({ quiz, onToggleSidebar, onFinish, onGenerateNextCourse }: C
                         animate={{ scale: 1, opacity: 1 }}
                         className="max-w-md w-full text-center space-y-8"
                     >
+                        {isInitiallyCompleted && !isFinished ? null : isInitiallyCompleted && (
+                            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium mb-2">
+                                Previously Attempted
+                            </div>
+                        )}
                         <div className={`mx-auto w-24 h-24 rounded-full flex items-center justify-center ${passed ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
                             <Trophy className="w-12 h-12" />
                         </div>

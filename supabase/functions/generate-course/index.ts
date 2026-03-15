@@ -128,7 +128,7 @@ Content Generation Rules:
 7. Generate exactly 5 questions for the final course quiz covering the provided material across all modules.
 8. DO NOT use markdown formatting inside the "theory" string. Format the "code" text appropriately for the language.
 9. CRITICAL CODE REQUIREMENT: For programming/technical courses, EVERY lesson that teaches a practical concept MUST include a specific code example in the "code" field. Do not leave it null unless it's purely historical/theoretical.
-10. MODULE QUIZZES: At the end of EVERY single module, you MUST generate exactly 1 'module_quiz' testing the user exclusively on the material covered in that specific module. Do not skip this!
+10. MODULE QUIZZES: At the end of EVERY single module, you MUST generate exactly 3 multiple-choice questions in 'module_quiz' testing the user exclusively on the material covered in that specific module. Do not skip this!
 
 ${previousCourseContext}`;
 
@@ -167,19 +167,24 @@ Respond with ONLY valid JSON.`;
                   properties: {
                     title: { type: "string", description: "Module title - related to the topic" },
                     module_quiz: {
-                      type: "object",
-                      description: "A quiz at the end of the module testing the knowledge from this module's lessons",
-                      properties: {
-                        question: { type: "string", description: "The multiple-choice question" },
-                        options: {
-                          type: "array",
-                          items: { type: "string" },
-                          description: "Exactly 4 options"
+                      type: "array",
+                      description: "Exactly 3 multiple-choice questions testing knowledge from this module's lessons",
+                      minItems: 3,
+                      maxItems: 3,
+                      items: {
+                        type: "object",
+                        properties: {
+                          question: { type: "string", description: "The multiple-choice question" },
+                          options: {
+                            type: "array",
+                            items: { type: "string" },
+                            description: "Exactly 4 options"
+                          },
+                          correct_option_index: { type: "number", description: "Index of the correct option (0-3)" },
+                          explanation: { type: "string", description: "Detailed explanation of why the correct option is correct" }
                         },
-                        correct_option_index: { type: "number", description: "Index of the correct option (0-3)" },
-                        explanation: { type: "string", description: "Detailed explanation of why the correct option is correct and why others might be wrong" }
-                      },
-                      required: ["question", "options", "correct_option_index", "explanation"]
+                        required: ["question", "options", "correct_option_index", "explanation"]
+                      }
                     },
                     lessons: {
                       type: "array",
@@ -373,7 +378,8 @@ Respond with ONLY valid JSON.`;
           }
         }
 
-        if (moduleData.module_quiz) {
+        if (moduleData.module_quiz && Array.isArray(moduleData.module_quiz) && moduleData.module_quiz.length > 0) {
+          // Store the array of 3 module quiz questions as a JSON lesson
           const { error: quizError } = await supabaseAdmin
             .from('lessons')
             .insert({
@@ -381,9 +387,9 @@ Respond with ONLY valid JSON.`;
               title: "Module Quiz",
               content: JSON.stringify({
                 is_module_quiz: true,
-                quiz: moduleData.module_quiz
+                quiz: moduleData.module_quiz  // now an array of 3 questions
               }),
-              duration_minutes: 5, // typical duration for a short quiz
+              duration_minutes: 5,
               order_index: moduleData.lessons.length
             });
 
