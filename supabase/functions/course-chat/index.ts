@@ -43,7 +43,7 @@ Your role:
       parts: [{ text: msg.content }]
     }));
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?key=${GEMINI_API_KEY}&alt=sse`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-pro:streamGenerateContent?key=${GEMINI_API_KEY}&alt=sse`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

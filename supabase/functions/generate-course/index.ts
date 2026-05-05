@@ -117,18 +117,18 @@ Content Generation Rules:
    - FOR ALL NEW COURSES (Beginner, Intermediate, Advanced): Module 1 MUST be exclusively the History & Background of the language. Module 2 MUST always start the absolute basics of programming syntax.
    - EXCEPTION (Continuations): If the user is generating a course and prior courses are provided in the context below, DO NOT generate a History or Basics module (unless explicitly chaining a sequence). You must completely skip them and instantly pick up where the previous course left off.
 3. Subject Pacing (Theoretical Concepts): Structure modules logically based on theoretical progression without forcing a history module unless specifically relevant.
-4. Depth & Scaling (CRITICAL): You must generate lessons and modules based on the requested difficulty (${difficulty}):
-   - Beginner: Generate approximately 3 modules (History, Basics, and Simple Applications).
-   - Intermediate: Generate 5 to 6 modules (History, Basics, and extending into Intermediate Applications).
-   - Advanced: Generate up to a maximum of 8 modules (History, Basics, and extending deep into Advanced Applications).
-5. Content Quality: Lesson content should be highly detailed text (at least 150-300 words).
+4. Depth & Scaling (CRITICAL TO REDUCE TOKENS): You must generate fewer, focused modules based on the requested difficulty (${difficulty}):
+   - Beginner: Generate exactly 2 modules (History/Basics, and Simple Applications).
+   - Intermediate: Generate exactly 3 modules (Basics, and Intermediate Applications).
+   - Advanced: Generate exactly 4 modules (Deep dive into Advanced Applications).
+5. Content Quality: Lesson content should be concise and focused text (around 80-120 words).
 6. Course Continuity Suggestion:
    - If the requested difficulty is Beginner, the final module/lesson MUST explicitly suggest to the user to "Click the Generate Intermediate Course button" next to continue learning.
    - If the requested difficulty is Intermediate, the final module/lesson MUST explicitly suggest to the user to "Click the Generate Advanced Course button" next.
-7. Generate exactly 5 questions for the final course quiz covering the provided material across all modules.
+7. Generate exactly 3 questions for the final course quiz covering the provided material across all modules.
 8. DO NOT use markdown formatting inside the "theory" string. Format the "code" text appropriately for the language.
 9. CRITICAL CODE REQUIREMENT: For programming/technical courses, EVERY lesson that teaches a practical concept MUST include a specific code example in the "code" field. Do not leave it null unless it's purely historical/theoretical.
-10. MODULE QUIZZES: At the end of EVERY single module, you MUST generate exactly 3 multiple-choice questions in 'module_quiz' testing the user exclusively on the material covered in that specific module. Do not skip this!
+10. MODULE QUIZZES: At the end of EVERY single module, you MUST generate exactly 2 multiple-choice questions in 'module_quiz' testing the user exclusively on the material covered in that specific module. Do not skip this!
 
 ${previousCourseContext}`;
 
@@ -138,112 +138,133 @@ IMPORTANT: Every module and lesson must be strictly about ${topic}. Ensure you f
 
 Respond with ONLY valid JSON.`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    let response: any;
+    let retries = 3;
+    let delay = 1000;
+
+    const reqBody = JSON.stringify({
+      system_instruction: {
+        parts: [{ text: systemPrompt }]
       },
-      body: JSON.stringify({
-        system_instruction: {
-          parts: [{ text: systemPrompt }]
-        },
-        contents: [{
-          role: 'user',
-          parts: [{ text: userPrompt }]
-        }],
-        generationConfig: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: "object",
-            properties: {
-              title: { type: "string", description: "Course title - must include the topic name" },
-              description: { type: "string", description: "Brief course description about the specific topic (2-3 sentences)" },
-              duration_hours: { type: "number" },
-              total_lessons: { type: "number" },
-              modules: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    title: { type: "string", description: "Module title - related to the topic" },
-                    module_quiz: {
-                      type: "array",
-                      description: "Exactly 3 multiple-choice questions testing knowledge from this module's lessons",
-                      minItems: 3,
-                      maxItems: 3,
-                      items: {
-                        type: "object",
-                        properties: {
-                          question: { type: "string", description: "The multiple-choice question" },
-                          options: {
-                            type: "array",
-                            items: { type: "string" },
-                            description: "Exactly 4 options"
-                          },
-                          correct_option_index: { type: "number", description: "Index of the correct option (0-3)" },
-                          explanation: { type: "string", description: "Detailed explanation of why the correct option is correct" }
+      contents: [{
+        role: 'user',
+        parts: [{ text: userPrompt }]
+      }],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "object",
+          properties: {
+            title: { type: "string", description: "Course title - must include the topic name" },
+            description: { type: "string", description: "Brief course description about the specific topic (2-3 sentences)" },
+            duration_hours: { type: "number" },
+            total_lessons: { type: "number" },
+            modules: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  title: { type: "string", description: "Module title - related to the topic" },
+                  module_quiz: {
+                    type: "array",
+                    description: "Exactly 2 multiple-choice questions testing knowledge from this module's lessons",
+                    minItems: 2,
+                    maxItems: 2,
+                    items: {
+                      type: "object",
+                      properties: {
+                        question: { type: "string", description: "The multiple-choice question" },
+                        options: {
+                          type: "array",
+                          items: { type: "string" },
+                          description: "Exactly 4 options"
                         },
-                        required: ["question", "options", "correct_option_index", "explanation"]
-                      }
-                    },
-                    lessons: {
-                      type: "array",
-                      items: {
-                        type: "object",
-                        properties: {
-                          title: { type: "string", description: "Lesson title - specific to the topic" },
-                          content: {
-                            type: "object",
-                            properties: {
-                              theory: { type: "string", description: "Detailed lesson theory explaining the concept. Plain text." },
-                              code: { type: "string", description: "A relevant, specific coding example illustrating the lesson. This MUST NOT BE EMPTY for programming/technical topics." },
-                              mcq: {
-                                type: "object",
-                                properties: {
-                                  question: { type: "string", description: "A simple multiple-choice question testing the knowledge from this lesson" },
-                                  options: {
-                                    type: "array",
-                                    items: { type: "string" },
-                                    description: "Exactly 4 options"
-                                  },
-                                  correct_option_index: { type: "number", description: "Index of the correct option (0-3)" }
-                                },
-                                required: ["question", "options", "correct_option_index"]
-                              }
-                            },
-                            required: ["theory", "code", "mcq"]
-                          },
-                          duration_minutes: { type: "number" }
-                        },
-                        required: ["title", "content", "duration_minutes"]
-                      }
+                        correct_option_index: { type: "number", description: "Index of the correct option (0-3)" },
+                        explanation: { type: "string", description: "Detailed explanation of why the correct option is correct" }
+                      },
+                      required: ["question", "options", "correct_option_index", "explanation"]
                     }
                   },
-                  required: ["title", "lessons", "module_quiz"]
-                }
-              },
-              quiz: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    question: { type: "string", description: "A clear multiple-choice question testing knowledge from the course" },
-                    options: {
-                      type: "array",
-                      items: { type: "string" },
-                      description: "Exactly 4 options"
-                    },
-                    correct_option_index: { type: "number" }
-                  },
-                  required: ["question", "options", "correct_option_index"]
-                }
+                  lessons: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        title: { type: "string", description: "Lesson title - specific to the topic" },
+                        content: {
+                          type: "object",
+                          properties: {
+                            theory: { type: "string", description: "Detailed lesson theory explaining the concept. Plain text." },
+                            code: { type: "string", description: "A relevant, specific coding example illustrating the lesson. This MUST NOT BE EMPTY for programming/technical topics." },
+                            mcq: {
+                              type: "object",
+                              properties: {
+                                question: { type: "string", description: "A simple multiple-choice question testing the knowledge from this lesson" },
+                                options: {
+                                  type: "array",
+                                  items: { type: "string" },
+                                  description: "Exactly 4 options"
+                                },
+                                correct_option_index: { type: "number", description: "Index of the correct option (0-3)" }
+                              },
+                              required: ["question", "options", "correct_option_index"]
+                            }
+                          },
+                          required: ["theory", "code", "mcq"]
+                        },
+                        duration_minutes: { type: "number" }
+                      },
+                      required: ["title", "content", "duration_minutes"]
+                    }
+                  }
+                },
+                required: ["title", "lessons", "module_quiz"]
               }
             },
-            required: ["title", "description", "duration_hours", "total_lessons", "modules", "quiz"]
-          }
+            quiz: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  question: { type: "string", description: "A clear multiple-choice question testing knowledge from the course" },
+                  options: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "Exactly 4 options"
+                  },
+                  correct_option_index: { type: "number" }
+                },
+                required: ["question", "options", "correct_option_index"]
+              }
+            }
+          },
+          required: ["title", "description", "duration_hours", "total_lessons", "modules", "quiz"]
         }
-      }),
+      }
     });
+
+    while (retries > 0) {
+      response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-pro:generateContent?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: reqBody
+      });
+
+      if (response.ok) {
+        break;
+      }
+
+      if (response.status === 503 || response.status === 429) {
+        console.warn(`Gemini API returned ${response.status}. Retrying in ${delay}ms... (${retries} retries left)`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        retries--;
+        delay *= 2; // Exponential backoff
+      } else {
+        break; // Break early on other non-retriable errors (like 400, 403, 404)
+      }
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -387,7 +408,7 @@ Respond with ONLY valid JSON.`;
               title: "Module Quiz",
               content: JSON.stringify({
                 is_module_quiz: true,
-                quiz: moduleData.module_quiz  // now an array of 3 questions
+                quiz: moduleData.module_quiz  // now an array of 2 questions
               }),
               duration_minutes: 5,
               order_index: moduleData.lessons.length
@@ -446,7 +467,7 @@ Respond with ONLY valid JSON.`;
     console.error('Error in generate-course:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
     return new Response(JSON.stringify({ error: message }), {
-      status: 500,
+      status: 200, // Changed to 200 to prevent FunctionsHttpError from hiding the actual error message in the frontend
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
