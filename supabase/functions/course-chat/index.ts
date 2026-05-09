@@ -15,6 +15,13 @@ serve(async (req: Request) => {
 
   try {
     const { messages, context, geminiApiKey } = await req.json();
+
+    // Keep only the last 10 messages (5 turns) to prevent context blowup.
+    // Always keep the first message for conversation continuity.
+    const trimmedMessages = messages.length > 10
+      ? [messages[0], ...messages.slice(-9)]
+      : messages;
+
     const GEMINI_API_KEY = geminiApiKey || Deno.env.get('GEMINI_API_KEY');
 
     if (!GEMINI_API_KEY) {
@@ -27,7 +34,9 @@ serve(async (req: Request) => {
 
 CRITICAL RULE: You MUST ONLY answer questions that are directly related to the material covered in the course "${context.course}". If the user asks a question about ANY topic outside the scope of this specific course, you MUST refuse to answer and gently remind them that you can only help with topics related to "${context.course}".
 
-${context.lessonContent ? `\nFor context, here is the text of the lesson they are currently reading:\n"""\n${context.lessonContent}\n"""\n` : ''}
+${context.lessonContent
+  ? `\nLesson context (summary):\n${context.lessonContent.slice(0, 600)}\n`
+  : ''}
 
 Your role:
 - Answer questions ONLY about the course material clearly and concisely.
@@ -38,7 +47,7 @@ Your role:
 - NEVER answer questions outside the scope of "${context.course}".`;
 
     // Map OpenAI-style messages to Gemini-style contents
-    const contents = messages.map((msg: any) => ({
+    const contents = trimmedMessages.map((msg: any) => ({
       role: msg.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: msg.content }]
     }));

@@ -75,11 +75,13 @@ serve(async (req: Request) => {
       );
 
       if (sameDifficultyCourses.length > 0) {
-        if (difficulty.toLowerCase() === 'beginner') {
-          // Block identical beginner courses outright
-          throw new Error(`You already have a Beginner course on ${topic}! Please generate an Intermediate course to continue learning.`);
+        const diffLower = difficulty.toLowerCase();
+        if (diffLower === 'beginner' || diffLower === 'intermediate') {
+          // Block duplicate beginner and intermediate courses
+          const nextLevel = diffLower === 'beginner' ? 'Intermediate' : 'Advanced';
+          throw new Error(`You already have a ${difficulty} course on ${topic}! Please generate an ${nextLevel} course to continue learning.`);
         } else {
-          // Allow infinite chaining for Intermediate/Advanced
+          // Allow infinite chaining only for Advanced
           isChainingSameDifficulty = true;
           chainCount = sameDifficultyCourses.length + 1;
         }
@@ -88,183 +90,162 @@ serve(async (req: Request) => {
 
     let previousCourseContext = "";
     if (hasPriorCourse) {
-      const priorCoursesDetails = existingCourses.map((c: any) => {
-        const moduleTitles = c.modules?.map((m: any) => m.title).join(", ") || "No modules found";
-        return `- Course Title: ${c.title}\n  Modules Already Covered in this course: ${moduleTitles}`;
-      }).join('\n\n');
-
+      // Provide all module titles so the AI knows exactly what has already been covered
+      const priorCourseSummaries = existingCourses.map((c: any) => {
+        const allModuleTitles: string[] = c.modules?.map((m: any) => m.title) ?? [];
+        const difficulty = c.title.toLowerCase().includes('beginner')
+          ? 'Beginner'
+          : c.title.toLowerCase().includes('intermediate')
+          ? 'Intermediate'
+          : 'Advanced';
+        return `[${difficulty} Course] Covered Modules: ${allModuleTitles.join(', ')}`;
+      }).join('\n');
 
       previousCourseContext = `
-CRITICAL CONTINUATION RULE:
-The user has already completed the following prior courses on this topic:
-${priorCoursesDetails}
+CRITICAL: The user has ALREADY completed the following courses. You MUST NOT teach these topics again.
+${priorCourseSummaries}
 
-${isChainingSameDifficulty 
-  ? `IMPORTANT: The user is generating ANOTHER "${difficulty}" level course. You MUST act as "Part ${chainCount}" of this difficulty! DO NOT repeat the exact subjects from the "Modules Already Covered" above. You must dive into completely NEW concepts at the ${difficulty} tier.`
-  : `You MUST start this new "${difficulty}" course explicitly from where those previous courses left off. Do NOT repeat the basics or any of the exact subjects from the "Modules Already Covered". This course MUST act as a seamless, direct continuation.`
-}`;
+${isChainingSameDifficulty
+  ? `CHAIN: Generate Part ${chainCount} of ${difficulty}. You MUST invent completely NEW modules.`
+  : `CONTINUATION: Build strictly on the above. DO NOT repeat the basics.`
+}`.trim();
     }
 
-    const systemPrompt = `You are an expert educational content creator with a strong Computer Science background. Your task is to create a dynamic course ONLY about the specific topic provided by the user, including a final MCQ quiz.
+    const systemPrompt = `You are a world-class educational content creator and curriculum designer. Your goal is to produce deeply engaging, accurate, and pedagogically sound courses.
 
-CRITICAL: The course MUST be about the EXACT topic specified. Do NOT generate content about any other subject.
+CRITICAL: Generate a course ONLY about the exact topic the user specifies. Never drift to related or adjacent topics.
 
-You MUST respond with valid JSON following strictly the provided JSON schema.
+RESPONSE FORMAT: You MUST respond with valid JSON only, matching the schema provided. No markdown, no explanation outside JSON.
 
-Content Generation Rules:
-1. Topic Type: Identify whether the topic is a "Programming Language/Software" or a "Theoretical Concept".
-2. Subject Pacing (Programming Languages):
-   - FOR ALL NEW COURSES (Beginner, Intermediate, Advanced): Module 1 MUST be exclusively the History & Background of the language. Module 2 MUST always start the absolute basics of programming syntax.
-   - EXCEPTION (Continuations): If the user is generating a course and prior courses are provided in the context below, DO NOT generate a History or Basics module (unless explicitly chaining a sequence). You must completely skip them and instantly pick up where the previous course left off.
-3. Subject Pacing (Theoretical Concepts): Structure modules logically based on theoretical progression without forcing a history module unless specifically relevant.
-4. Depth & Scaling (CRITICAL TO REDUCE TOKENS): You must generate fewer, focused modules based on the requested difficulty (${difficulty}):
-   - Beginner: Generate exactly 2 modules (History/Basics, and Simple Applications).
-   - Intermediate: Generate exactly 3 modules (Basics, and Intermediate Applications).
-   - Advanced: Generate exactly 4 modules (Deep dive into Advanced Applications).
-5. Content Quality: Lesson content should be concise and focused text (around 80-120 words).
-6. Course Continuity Suggestion:
-   - If the requested difficulty is Beginner, the final module/lesson MUST explicitly suggest to the user to "Click the Generate Intermediate Course button" next to continue learning.
-   - If the requested difficulty is Intermediate, the final module/lesson MUST explicitly suggest to the user to "Click the Generate Advanced Course button" next.
-7. Generate exactly 3 questions for the final course quiz covering the provided material across all modules.
-8. DO NOT use markdown formatting inside the "theory" string. Format the "code" text appropriately for the language.
-9. CRITICAL CODE REQUIREMENT: For programming/technical courses, EVERY lesson that teaches a practical concept MUST include a specific code example in the "code" field. Do not leave it null unless it's purely historical/theoretical.
-10. MODULE QUIZZES: At the end of EVERY single module, you MUST generate exactly 2 multiple-choice questions in 'module_quiz' testing the user exclusively on the material covered in that specific module. Do not skip this!
+--- CONTENT QUALITY RULES ---
+1. Expert-Level Theory: Theory text must be exceptionally high-quality, comprehensive, and engaging (300-500 words per lesson). Write like a senior engineer or domain expert mentoring a junior. Use markdown formatting extensively (bolding key terms, using bulleted lists, and structured paragraphs).
+2. Deep Explanations: Never just state facts. Always explain the "Why" and "How". Use vivid, real-world analogies to break down complex concepts. Avoid all vague, fluffy, or repetitive filler sentences.
+3. Production-Ready Code: Every lesson teaching a practical/technical concept MUST have a robust, working code example in the "code" field. The code must include detailed inline comments explaining the logic, use modern best practices, and represent realistic use-cases rather than trivial "foo/bar" examples. For purely historical/introductory lessons, set "code" to null.
+4. Rigorous Assessment: MCQ questions must test deep conceptual understanding and application, not mere memorization. All incorrect options (distractors) must be highly plausible misconceptions. Module quiz questions must be entirely distinct from lesson MCQs and challenge the student's mastery of the entire module.
+
+--- PACING AND STRUCTURE RULES ---
+1. FRESH COURSES (no prior course context provided): Regardless of difficulty level (Beginner, Intermediate, or Advanced), Module 1 MUST always exist and MUST follow this exact structure:
+   * Module 1 title: "Introduction & Overview" (or "History & Background" for programming languages)
+   * Module 1, Lesson 1 title: "Course Overview" — This MUST be a pure introduction lesson with NO code example (set code to null). It must explain: what the topic is, why it matters, what the student will learn across all modules in this course, and what prior knowledge is assumed. Minimum 200 words.
+   * Module 1, Lesson 2 onwards: Begin the actual foundational content (history, background, or core concepts depending on topic type).
+2. CONTINUATION COURSES (prior course context IS provided in the context block below): DO NOT add an Introduction or History module. Skip directly to new topics that pick up where the previous course ended.
+3. Subject Pacing (Theoretical Concepts): For non-programming topics, Module 1 Lesson 1 must still be a "Course Overview" introduction lesson (code: null) explaining the full scope of the course. After that, structure modules by conceptual complexity.
+4. Depth & Scaling (CRITICAL): Module count is FIXED by difficulty. Module 1 is always the Introduction module described in rule 1 above. The remaining modules cover the actual course content:
+   - Beginner: EXACTLY 3 modules total. Module 1 = Introduction & Overview. Module 2 = Core Fundamentals. Module 3 = Simple Applications & Practice.
+   - Intermediate: EXACTLY 4 to 5 modules total. Module 1 = Introduction & Overview (fresh course) OR first new topic (continuation). Remaining modules = progressively deeper intermediate concepts.
+   - Advanced: EXACTLY 6 to 7 modules total. Module 1 = Introduction & Overview (fresh course) OR first advanced topic (continuation). Remaining modules = advanced techniques, real-world patterns, and expert-level content.
+
+--- QUIZ RULES ---
+Generate exactly 5 final course quiz questions covering material from all modules.
+Generate exactly 3 module quiz questions per module covering only that module's content.
 
 ${previousCourseContext}`;
 
-    const userPrompt = `Create a ${difficulty} level mini-course SPECIFICALLY about: "${topic}". 
+    const pacingRule = hasPriorCourse
+      ? `CRITICAL CONTINUATION: You MUST skip history, basics, and ANY topics already covered in prior courses. Generate 100% NEW ${difficulty} material.`
+      : `CRITICAL PACING RULE: Since this is a fresh course on a new topic, Module 1 MUST be a pure Introduction/History module with NO code examples (set "code" to null). Do not skip the introduction, even for advanced courses.`;
 
-IMPORTANT: Every module and lesson must be strictly about ${topic}. Ensure you follow the Content Generation Rules, specifically regarding History modules for programming languages and continuation logic if applicable.
+    const userPrompt = `Create a ${difficulty} level course SPECIFICALLY about: "${topic}".
+
+This is a ${hasPriorCourse ? 'CONTINUATION course — skip intro/history, pick up from where prior courses ended' : 'FRESH course — Module 1 Lesson 1 MUST be a Course Overview introduction with no code'}.
+
+Every module and lesson must be strictly about ${topic}. Follow all Content Generation Rules exactly, especially the Module 1 Course Overview rule for fresh courses.
 
 Respond with ONLY valid JSON.`;
 
-    let response: any;
-    let retries = 3;
-    let delay = 1000;
-
-    const reqBody = JSON.stringify({
-      system_instruction: {
-        parts: [{ text: systemPrompt }]
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
-      contents: [{
-        role: 'user',
-        parts: [{ text: userPrompt }]
-      }],
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: "object",
-          properties: {
-            title: { type: "string", description: "Course title - must include the topic name" },
-            description: { type: "string", description: "Brief course description about the specific topic (2-3 sentences)" },
-            duration_hours: { type: "number" },
-            total_lessons: { type: "number" },
-            modules: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  title: { type: "string", description: "Module title - related to the topic" },
-                  module_quiz: {
-                    type: "array",
-                    description: "Exactly 2 multiple-choice questions testing knowledge from this module's lessons",
-                    minItems: 2,
-                    maxItems: 2,
-                    items: {
-                      type: "object",
-                      properties: {
-                        question: { type: "string", description: "The multiple-choice question" },
-                        options: {
-                          type: "array",
-                          items: { type: "string" },
-                          description: "Exactly 4 options"
+      body: JSON.stringify({
+        system_instruction: {
+          parts: [{ text: systemPrompt }]
+        },
+        contents: [{
+          role: 'user',
+          parts: [{ text: userPrompt }]
+        }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "object",
+            properties: {
+              title: { type: "string" },
+              description: { type: "string" },
+              duration_hours: { type: "number" },
+              total_lessons: { type: "number" },
+              modules: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    title: { type: "string" },
+                    module_quiz: {
+                      type: "array",
+                      minItems: 3,
+                      maxItems: 3,
+                      items: {
+                        type: "object",
+                        properties: {
+                          question: { type: "string" },
+                          options: { type: "array", items: { type: "string" } },
+                          correct_option_index: { type: "number" },
+                          explanation: { type: "string" }
                         },
-                        correct_option_index: { type: "number", description: "Index of the correct option (0-3)" },
-                        explanation: { type: "string", description: "Detailed explanation of why the correct option is correct" }
-                      },
-                      required: ["question", "options", "correct_option_index", "explanation"]
+                        required: ["question", "options", "correct_option_index", "explanation"]
+                      }
+                    },
+                    lessons: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          title: { type: "string" },
+                          content: {
+                            type: "object",
+                            properties: {
+                              theory: { type: "string" },
+                              code: { type: "string", nullable: true },
+                              mcq: {
+                                type: "object",
+                                properties: {
+                                  question: { type: "string" },
+                                  options: { type: "array", items: { type: "string" } },
+                                  correct_option_index: { type: "number" }
+                                },
+                                required: ["question", "options", "correct_option_index"]
+                              }
+                            },
+                            required: ["theory", "mcq"]
+                          },
+                          duration_minutes: { type: "number" }
+                        },
+                        required: ["title", "content", "duration_minutes"]
+                      }
                     }
                   },
-                  lessons: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        title: { type: "string", description: "Lesson title - specific to the topic" },
-                        content: {
-                          type: "object",
-                          properties: {
-                            theory: { type: "string", description: "Detailed lesson theory explaining the concept. Plain text." },
-                            code: { type: "string", description: "A relevant, specific coding example illustrating the lesson. This MUST NOT BE EMPTY for programming/technical topics." },
-                            mcq: {
-                              type: "object",
-                              properties: {
-                                question: { type: "string", description: "A simple multiple-choice question testing the knowledge from this lesson" },
-                                options: {
-                                  type: "array",
-                                  items: { type: "string" },
-                                  description: "Exactly 4 options"
-                                },
-                                correct_option_index: { type: "number", description: "Index of the correct option (0-3)" }
-                              },
-                              required: ["question", "options", "correct_option_index"]
-                            }
-                          },
-                          required: ["theory", "code", "mcq"]
-                        },
-                        duration_minutes: { type: "number" }
-                      },
-                      required: ["title", "content", "duration_minutes"]
-                    }
-                  }
-                },
-                required: ["title", "lessons", "module_quiz"]
+                  required: ["title", "lessons", "module_quiz"]
+                }
+              },
+              quiz: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    question: { type: "string" },
+                    options: { type: "array", items: { type: "string" } },
+                    correct_option_index: { type: "number" }
+                  },
+                  required: ["question", "options", "correct_option_index"]
+                }
               }
             },
-            quiz: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  question: { type: "string", description: "A clear multiple-choice question testing knowledge from the course" },
-                  options: {
-                    type: "array",
-                    items: { type: "string" },
-                    description: "Exactly 4 options"
-                  },
-                  correct_option_index: { type: "number" }
-                },
-                required: ["question", "options", "correct_option_index"]
-              }
-            }
-          },
-          required: ["title", "description", "duration_hours", "total_lessons", "modules", "quiz"]
+            required: ["title", "description", "duration_hours", "total_lessons", "modules", "quiz"]
+          }
         }
-      }
+      }),
     });
-
-    while (retries > 0) {
-      response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-pro:generateContent?key=${GEMINI_API_KEY}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: reqBody
-      });
-
-      if (response.ok) {
-        break;
-      }
-
-      if (response.status === 503 || response.status === 429) {
-        console.warn(`Gemini API returned ${response.status}. Retrying in ${delay}ms... (${retries} retries left)`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-        retries--;
-        delay *= 2; // Exponential backoff
-      } else {
-        break; // Break early on other non-retriable errors (like 400, 403, 404)
-      }
-    }
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -408,7 +389,7 @@ Respond with ONLY valid JSON.`;
               title: "Module Quiz",
               content: JSON.stringify({
                 is_module_quiz: true,
-                quiz: moduleData.module_quiz  // now an array of 2 questions
+                quiz: moduleData.module_quiz  // now an array of 3 questions
               }),
               duration_minutes: 5,
               order_index: moduleData.lessons.length
@@ -467,7 +448,7 @@ Respond with ONLY valid JSON.`;
     console.error('Error in generate-course:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
     return new Response(JSON.stringify({ error: message }), {
-      status: 200, // Changed to 200 to prevent FunctionsHttpError from hiding the actual error message in the frontend
+      status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

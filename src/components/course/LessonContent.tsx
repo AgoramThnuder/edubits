@@ -95,7 +95,7 @@ const LessonContent = forwardRef<HTMLDivElement, LessonContentProps>(({
         theoryText = '';
       } else {
         theoryText = parsed.theory || '';
-        codeSnippet = parsed.code || null;
+        codeSnippet = (parsed.code && parsed.code.trim().length > 0) ? parsed.code : null;
         mcq = parsed.mcq || null;
       }
     }
@@ -201,7 +201,7 @@ const LessonContent = forwardRef<HTMLDivElement, LessonContentProps>(({
               </div>
 
               {/* Code Example */}
-              {codeSnippet && !isModuleQuiz && (
+              {codeSnippet && codeSnippet.trim().length > 0 && !isModuleQuiz && (
                 <div className="mt-8 w-full rounded-xl overflow-hidden border border-border/50 bg-[#0d1117] shadow-lg">
                   <div className="flex items-center justify-between px-4 py-3 bg-[#161b22] border-b border-white/10 text-slate-300">
                     <div className="flex items-center gap-2">

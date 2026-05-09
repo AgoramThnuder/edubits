@@ -6,6 +6,27 @@ import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 
 /** Lightweight inline markdown renderer – no external dependencies needed */
+function compressLessonContext(rawContent: string): string {
+  try {
+    const parsed = JSON.parse(rawContent);
+    if (parsed && typeof parsed === 'object') {
+      if (parsed.is_module_quiz) {
+        return '[Module Quiz — no lesson text]';
+      }
+      // Keep only the theory text, strip code entirely
+      const theory: string = parsed.theory || '';
+      // Truncate to first 800 chars — enough for the AI tutor to understand the topic
+      const truncated = theory.length > 800 ? theory.slice(0, 800) + '...[truncated]' : theory;
+      return truncated.trim();
+    }
+  } catch {
+    // Fallback: treat as plain text and truncate
+  }
+  return typeof rawContent === 'string'
+    ? (rawContent.length > 800 ? rawContent.slice(0, 800) + '...[truncated]' : rawContent)
+    : '';
+}
+
 function renderMarkdown(text: string) {
   // Split into lines and process each
   const lines = text.split("\n");
@@ -129,7 +150,10 @@ const CourseChatbot = forwardRef<HTMLDivElement, CourseChatbotProps>(({ isOpen, 
         },
         body: JSON.stringify({
           messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
-          context,
+          context: {
+            ...context,
+            lessonContent: context.lessonContent ? compressLessonContext(context.lessonContent) : undefined
+          },
           geminiApiKey: import.meta.env.VITE_GEMINI_API_KEY,
         }),
       });

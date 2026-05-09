@@ -8,7 +8,8 @@ import {
   BarChart3,
   Home,
   Loader2,
-  Trophy
+  Trophy,
+  Terminal
 } from "lucide-react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import LessonContent from "@/components/course/LessonContent";
@@ -20,6 +21,15 @@ import { useLogActivity } from "@/hooks/useActivity";
 import { useCourseDetails } from "@/hooks/useCourseDetails";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+
+function lessonHasCode(content: string): boolean {
+  try {
+    const parsed = JSON.parse(content);
+    return typeof parsed?.code === 'string' && parsed.code.trim().length > 0;
+  } catch {
+    return false;
+  }
+}
 
 const CoursePage = () => {
   const { courseId } = useParams();
@@ -33,11 +43,11 @@ const CoursePage = () => {
     queryFn: async () => {
       if (!user || !courseId) return null;
       const { data: quiz } = await supabase
-        .from("quizzes").select("id").eq("course_id", courseId).single();
+        .from("quizzes").select("id").eq("course_id", courseId).maybeSingle();
       if (!quiz) return null;
       const { data } = await supabase
         .from("quiz_completions").select("score, total_questions")
-        .eq("user_id", user.id).eq("quiz_id", quiz.id).single();
+        .eq("user_id", user.id).eq("quiz_id", quiz.id).maybeSingle();
       return data ?? null;
     },
     enabled: !!user && !!courseId,
@@ -269,6 +279,9 @@ const CoursePage = () => {
                         <Circle className="w-4 h-4 shrink-0" />
                       )}
                       <span className={`line-clamp-1 ${lesson.title === "Module Quiz" ? "text-primary font-medium" : ""}`}>{lesson.title}</span>
+                      {lessonHasCode(lesson.content) && (
+                        <Terminal className="w-3.5 h-3.5 text-muted-foreground shrink-0 ml-auto" />
+                      )}
                     </button>
                   ))}
                 </div>
