@@ -21,6 +21,7 @@ interface AuthContextType {
   refreshProfile: () => Promise<void>;
   changePassword: (password: string) => Promise<{ error: Error | null }>;
   deleteAccount: () => Promise<{ error: Error | null }>;
+  signInWithGoogle: () => Promise<{ error: Error | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -126,6 +127,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setProfile(null);
   };
 
+  const signInWithGoogle = async () => {
+    console.log("Attempting sign in with Google");
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin,
+      },
+    });
+
+    if (error) console.error("Google sign in error:", error);
+
+    return { error: error as Error | null };
+  };
+
   const updateProfile = async (updates: Partial<Profile>) => {
     if (!user) return { error: new Error("No user logged in") };
 
@@ -174,6 +189,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         loading,
         signUp,
         signIn,
+        signInWithGoogle,
         signOut,
         updateProfile,
         refreshProfile,
